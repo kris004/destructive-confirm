@@ -1,6 +1,9 @@
-# power-confirm
+# destructive-confirm
 
-Native GTK/libadwaita confirmation dialog for destructive power actions.
+Native GTK/libadwaita confirmation dialog for destructive actions.
+
+It is useful from shell scripts that need a small GUI confirmation step before
+running an action such as restart, shutdown, deletion, or data replacement.
 
 ## Build
 
@@ -19,16 +22,16 @@ Dependencies are discovered with `pkg-config`:
 make install
 ```
 
-By default this installs to `~/.local/bin/power-confirm`. Override `PREFIX` or
-`BINDIR` if needed.
+By default this installs to `~/.local/bin/destructive-confirm` and creates a
+compatibility symlink at `~/.local/bin/power-confirm`.
 
 ## Usage
 
 ```sh
-power-confirm \
-  --title "Power menu" \
-  --text "Restart now?" \
-  --confirm-label "Restart now" \
+destructive-confirm \
+  --title "Confirm action" \
+  --text "Delete this item?" \
+  --confirm-label "Delete" \
   --cancel-label "Cancel"
 ```
 

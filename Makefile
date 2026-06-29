@@ -1,6 +1,7 @@
-APP := power-confirm
+APP := destructive-confirm
+COMPAT_APP := power-confirm
 BUILD_DIR := build
-SRC := src/power-confirm.c
+SRC := src/destructive-confirm.c
 PKGS := gtk4 libadwaita-1
 
 PREFIX ?= $(HOME)/.local
@@ -8,6 +9,7 @@ BINDIR ?= $(PREFIX)/bin
 CC ?= cc
 PKG_CONFIG ?= pkg-config
 INSTALL ?= install
+LN ?= ln
 TIMEOUT ?= timeout
 
 WARN_CFLAGS := -std=c17 -Wall -Wextra -Wpedantic -Wformat=2 -Wshadow \
@@ -31,10 +33,11 @@ check: $(BUILD_DIR)/$(APP)
 	$(BUILD_DIR)/$(APP) --text '' >/dev/null 2>&1; test $$? -eq 2
 
 smoke-gui: $(BUILD_DIR)/$(APP)
-	$(TIMEOUT) 2 $(BUILD_DIR)/$(APP) --title 'Power menu test' --text 'Restart now?' --confirm-label 'Restart now' --cancel-label 'Cancel'; test $$? -eq 124
+	$(TIMEOUT) 2 $(BUILD_DIR)/$(APP) --title 'Destructive action test' --text 'Delete this item?' --confirm-label 'Delete' --cancel-label 'Cancel'; test $$? -eq 124
 
 install: $(BUILD_DIR)/$(APP)
 	$(INSTALL) -Dm0755 $(BUILD_DIR)/$(APP) $(DESTDIR)$(BINDIR)/$(APP)
+	$(LN) -sf $(APP) $(DESTDIR)$(BINDIR)/$(COMPAT_APP)
 
 clean:
 	rm -rf $(BUILD_DIR)

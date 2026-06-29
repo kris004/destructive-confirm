@@ -1,18 +1,23 @@
-# power-confirm design
+# destructive-confirm design
 
 ## Goal
 
-`power-confirm` is a tiny native confirmation dialog for destructive desktop
-power actions such as restart and shutdown.
+`destructive-confirm` is a tiny native confirmation dialog for destructive
+desktop actions.
 
 It exists because `zenity --question` is good for simple confirmation, but does
 not provide a supported way to mark only the confirm button as destructive or to
 fix that button's foreground color independently from the rest of the dialog.
 
+The first caller is the Sway power menu, but the helper is intentionally general
+so other scripts can confirm deletion, replacement, reset, or similar actions
+without growing their own GTK code.
+
 ## Requirements
 
-- Provide a small executable suitable for `~/.local/bin/power-confirm`.
-- Keep the command-line interface used by `power-menu`:
+- Provide a small executable suitable for `~/.local/bin/destructive-confirm`.
+- Keep a compatibility `power-confirm` symlink for existing callers.
+- Provide a script-friendly command-line interface:
   - `--title <text>`
   - `--text <text>`
   - `--confirm-label <text>`
@@ -21,24 +26,28 @@ fix that button's foreground color independently from the rest of the dialog.
 - Exit non-zero for Escape, Cancel, close, parse errors, or display failures.
 - Make Enter activate the confirm response.
 - Make Escape/window-close activate cancel.
-- Use native GTK/libadwaita destructive response styling.
+- Use native GTK/libadwaita destructive response semantics.
 - Scope any CSS fixes to this process only.
 
 ## Implementation choice
 
 The helper is written in C against GTK 4 and libadwaita. This keeps startup and
-runtime overhead low while using Adwaita's native destructive button semantics.
+runtime overhead low while using Adwaita's destructive response semantics.
 
 The dialog is an `AdwAlertDialog` with two responses:
 
 - `confirm`: default response, destructive appearance
 - `cancel`: close response
 
-A small CSS provider forces the destructive button text to white. The background
-is still supplied by the theme's destructive-action styling, so this only fixes
-the low-contrast red-on-red foreground seen with the current theme.
+The current local theme did not give the destructive response the high-contrast
+red button treatment expected for this prompt, so the helper also installs a
+small process-local CSS provider for `button.destructive-action`. That CSS gives
+the destructive button a red background and white text while leaving the rest of
+the GTK theme alone.
 
 ## Installation
 
-The project builds a single binary at `build/power-confirm` and installs it to
-`$(PREFIX)/bin/power-confirm`, defaulting to `~/.local/bin/power-confirm`.
+The project builds a single binary at `build/destructive-confirm` and installs
+it to `$(PREFIX)/bin/destructive-confirm`, defaulting to
+`~/.local/bin/destructive-confirm`. `make install` also creates a
+`power-confirm` symlink for older callers.

@@ -4,13 +4,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define APP_ID "io.github.kristopher.PowerConfirm"
+#define APP_ID "io.github.kristopher.DestructiveConfirm"
 #define EXIT_USAGE 2
 
 static const char css[] =
-    "button.destructive-action,"
+    "button.destructive-action {"
+    "  background: #c01c28;"
+    "  background-color: #c01c28;"
+    "  background-image: none;"
+    "  color: #ffffff;"
+    "  text-shadow: none;"
+    "}"
+    "button.destructive-action:hover {"
+    "  background: #e01b24;"
+    "  background-color: #e01b24;"
+    "  background-image: none;"
+    "  color: #ffffff;"
+    "}"
+    "button.destructive-action:active {"
+    "  background: #a51d2d;"
+    "  background-color: #a51d2d;"
+    "  background-image: none;"
+    "  color: #ffffff;"
+    "}"
     "button.destructive-action label {"
     "  color: #ffffff;"
+    "  text-shadow: none;"
     "}";
 
 typedef struct {
@@ -100,12 +119,12 @@ parse_options(int *argc, char ***argv, AppState *state) {
   g_option_context_add_main_entries(context, entries, NULL);
 
   if (!g_option_context_parse(context, argc, argv, &error)) {
-    g_printerr("power-confirm: %s\n", error->message);
+    g_printerr("destructive-confirm: %s\n", error->message);
     return FALSE;
   }
 
   if (state->text == NULL || state->text[0] == '\0') {
-    g_printerr("power-confirm: --text is required\n");
+    g_printerr("destructive-confirm: --text is required\n");
     return FALSE;
   }
 
