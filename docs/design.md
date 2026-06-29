@@ -19,7 +19,7 @@ without growing their own GTK code.
 - Keep a compatibility `power-confirm` symlink for existing callers.
 - Provide a script-friendly command-line interface:
   - `--title <text>`
-  - `--text <text>`
+  - `--text <text>` for optional explanatory text
   - `--confirm-label <text>`
   - `--cancel-label <text>`
 - Exit `0` only when the user confirms.
@@ -34,10 +34,13 @@ without growing their own GTK code.
 The helper is written in C against GTK 4 and libadwaita. This keeps startup and
 runtime overhead low while using Adwaita's destructive response semantics.
 
-The dialog is an `AdwAlertDialog` with two responses:
+The dialog is an `AdwAlertDialog` with optional heading text and two responses:
 
 - `confirm`: default response, destructive appearance
 - `cancel`: close response
+
+Callers should omit heading text when the button labels are already clear, such
+as a two-button `Restart now` / `Cancel` prompt.
 
 The current local theme did not give the destructive response the high-contrast
 red button treatment expected for this prompt, so the helper also installs a

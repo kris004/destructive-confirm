@@ -30,10 +30,12 @@ compatibility symlink at `~/.local/bin/power-confirm`.
 ```sh
 destructive-confirm \
   --title "Confirm action" \
-  --text "Delete this item?" \
   --confirm-label "Delete" \
   --cancel-label "Cancel"
 ```
+
+`--text` is optional. Omit it for a button-only prompt, or supply it when the
+button labels alone do not carry enough context.
 
 Exit status:
 

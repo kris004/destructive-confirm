@@ -30,10 +30,10 @@ $(BUILD_DIR)/$(APP): $(SRC) | $(BUILD_DIR)
 
 check: $(BUILD_DIR)/$(APP)
 	$(BUILD_DIR)/$(APP) --help >/dev/null
-	$(BUILD_DIR)/$(APP) --text '' >/dev/null 2>&1; test $$? -eq 2
+	$(BUILD_DIR)/$(APP) --does-not-exist >/dev/null 2>&1; test $$? -eq 2
 
 smoke-gui: $(BUILD_DIR)/$(APP)
-	$(TIMEOUT) 2 $(BUILD_DIR)/$(APP) --title 'Destructive action test' --text 'Delete this item?' --confirm-label 'Delete' --cancel-label 'Cancel'; test $$? -eq 124
+	$(TIMEOUT) 2 $(BUILD_DIR)/$(APP) --title 'Destructive action test' --confirm-label 'Delete' --cancel-label 'Cancel'; test $$? -eq 124
 
 install: $(BUILD_DIR)/$(APP)
 	$(INSTALL) -Dm0755 $(BUILD_DIR)/$(APP) $(DESTDIR)$(BINDIR)/$(APP)

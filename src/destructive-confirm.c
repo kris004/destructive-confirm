@@ -42,6 +42,7 @@ typedef struct {
 } AppState;
 
 static void install_css(void);
+static const char *optional_text(const char *text);
 static void on_response(AdwAlertDialog *dialog, const char *response,
                         gpointer user_data);
 static void on_activate(GApplication *app, gpointer user_data);
@@ -61,6 +62,15 @@ install_css(void) {
   gtk_style_context_add_provider_for_display(
       display, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(provider);
+}
+
+static const char *
+optional_text(const char *text) {
+  if (text == NULL || text[0] == '\0') {
+    return NULL;
+  }
+
+  return text;
 }
 
 static void
@@ -85,7 +95,7 @@ on_activate(GApplication *app, gpointer user_data) {
   g_application_hold(app);
   install_css();
 
-  dialog = adw_alert_dialog_new(state->text, "");
+  dialog = adw_alert_dialog_new(optional_text(state->text), NULL);
   alert = ADW_ALERT_DIALOG(dialog);
 
   adw_alert_dialog_add_response(alert, "cancel", state->cancel_label);
@@ -120,11 +130,6 @@ parse_options(int *argc, char ***argv, AppState *state) {
 
   if (!g_option_context_parse(context, argc, argv, &error)) {
     g_printerr("destructive-confirm: %s\n", error->message);
-    return FALSE;
-  }
-
-  if (state->text == NULL || state->text[0] == '\0') {
-    g_printerr("destructive-confirm: --text is required\n");
     return FALSE;
   }
 
