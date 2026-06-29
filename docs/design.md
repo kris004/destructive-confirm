@@ -34,7 +34,8 @@ without growing their own GTK code.
 The helper is written in C against GTK 4 and libadwaita. This keeps startup and
 runtime overhead low while using Adwaita's destructive response semantics.
 
-The dialog is an `AdwAlertDialog` with optional heading text and two responses:
+When explanatory text is supplied, the dialog is an `AdwAlertDialog` with a
+heading and two responses:
 
 - `confirm`: default response, destructive appearance
 - `cancel`: close response
@@ -42,11 +43,19 @@ The dialog is an `AdwAlertDialog` with optional heading text and two responses:
 Callers should omit heading text when the button labels are already clear, such
 as a two-button `Restart now` / `Cancel` prompt.
 
+When text is omitted, the helper uses a compact undecorated GTK window containing
+only the two buttons. `AdwAlertDialog` keeps alert-message spacing even with no
+heading/body, so the custom compact path avoids a blank reserved text area.
+
 The current local theme did not give the destructive response the high-contrast
 red button treatment expected for this prompt, so the helper also installs a
 small process-local CSS provider for `button.destructive-action`. That CSS gives
 the destructive button a red background and white text while leaving the rest of
 the GTK theme alone.
+
+The application uses `G_APPLICATION_NON_UNIQUE` because it is a command-line
+prompt helper. Each invocation must use its own arguments instead of activating
+an older still-running prompt with the same application ID.
 
 ## Installation
 
