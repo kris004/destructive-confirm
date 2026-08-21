@@ -31,3 +31,17 @@ make smoke-gui
 
 `make smoke-gui` intentionally opens a dialog and expects it to be killed by
 `timeout`, proving the dialog stays alive awaiting a response.
+
+## Publication Boundary
+
+- Treat every file, commit, branch, tag, and reachable history as potentially
+  public, even while the remote repository is private or absent.
+- Do not commit secrets, private network details, personal data, private issue
+  links, environment identifiers, or unnecessary absolute local paths.
+- Keep documentation, examples, fixtures, and defaults portable for external
+  users and contributors.
+- Preserve unrelated dirty work and stage exact paths.
+- Before exposing previously private history, scan both the current tree and
+  reachable Git history for private or environment-specific material.
+- Do not change visibility, publish, push, or create a release without explicit
+  authorization.
