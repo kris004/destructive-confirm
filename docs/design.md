@@ -50,31 +50,41 @@ heading/body, so the custom compact path avoids a blank reserved text area.
 The current local theme did not give the destructive response the high-contrast
 red button treatment expected for this prompt, so the helper also installs a
 small process-local CSS provider for `button.destructive-action`. The destructive
-button has an ember-red face, white label, and a transparent decorative border
-containing Blender-rendered fire. A spark ignites at the top-left, the flame
-travels clockwise, and after 1.5 seconds a two-second burning loop takes over.
-The label and button face are not part of the artwork. Cancel and the rest of
-the GTK theme are unchanged.
+button has an ember-red face, white label, and Blender-rendered fire around its
+outside. A white-hot spark remains visible at the top-left for 0.55 seconds,
+then sweeps clockwise over 1.3 seconds. At 2.2 seconds a seamless three-second
+burning loop takes over. Flame geometry is four times taller than the original
+small border effect. The label and button face are not part of the artwork.
 
-The border reserves 16 logical pixels around the red face so fire does not
-overlap adjacent controls. Native nine-slice border images preserve corner
-shape and flame thickness at different label lengths. They stretch, never tile.
-The native focus outline follows the full button, including this border.
+The dialog retains ordinary button sizes, spacing, focus outlines, and hit
+targets. `src/fire-overlay.c` draws the decoration behind the original content
+using `GtkOverlay`. Neither response buttons nor their labels are replaced.
+For the alert path, the public `AdwDialog:child` API wraps the existing content,
+and `AdwDialog:default-widget` supplies the native confirm button. Production
+code does not traverse libadwaita's private widget tree.
 
-GTK CSS keyframes select frames at 24 fps with discrete steps, rather than
-cross-fading or rerendering fire. Only painting changes during the sequence;
-geometry, focus, keyboard activation, and hit targets remain stable. Both the
-compact window and native alert responses use the same stylesheet, without
-reaching into libadwaita's private widget tree.
+Eight nine-slice patches preserve corner shape and flame thickness at different
+label lengths; they stretch, never tile. The center is not drawn. Flames may
+spill over the surrounding dialog space, but opaque native controls keep their
+labels clear. A transparent 56-pixel outer window fringe avoids clipping fire
+outside the normal-sized dialog card. It is not button padding. The surface
+input region is limited to the card so this invisible fringe does not intercept
+clicks intended for other applications.
+
+The first mapped GTK frame starts the ignition, so startup work does not consume
+the spark. The frame clock blends adjacent 30 fps rendered frames at the
+display's frame rate. A four-texture cache bounds decoded artwork memory.
+Only painting changes during the sequence; layout and response behavior remain
+native.
 
 The effect follows `GtkSettings:gtk-enable-animations` and, when built with GTK
 4.22 or newer, `GtkSettings:gtk-interface-reduced-motion`. With motion disabled,
-the ring is shown already ignited and still. High-contrast mode removes the fire
-and decorative border in favor of a normally sized solid red button with a
-white border. Preference changes are applied while the dialog is open; no
-global GTK settings or CSS are written.
+the ring is shown already ignited and still, with no animation tick.
+High-contrast mode removes the fire and transparent fringe in favor of a solid
+red button with a white border. Preference changes are applied while the dialog
+is open; no global GTK settings or CSS are written.
 
-The stylesheet and 84 original RGBA frames live in `data/` and are compiled into
+The stylesheet and 156 original RGBA frames live in `data/` and are compiled into
 a GResource inside the executable using `glib-compile-resources`. PNG files are
 already compressed and are not compressed again in the resource bundle. The
 installed helper remains a single self-contained binary, with no Blender,
@@ -83,9 +93,11 @@ video decoder, playback process, or on-disk asset directory needed at runtime.
 `art/render-fire.py` creates a deterministic Blender 5.0 scene with a rounded
 emissive perimeter, turbulent translucent flame ribbons, sparks, and compositor
 glow. This is procedural rendered artwork, not a baked fluid simulation or
-stock footage. `art/pack-fire.py` validates frames, strips metadata, and writes
-the stepped animations and resource manifest. These tools are not run during
-an ordinary build; the rendered assets are checked in.
+stock footage. `art/fire_config.py` shares render geometry and playback timing.
+`art/pack-fire.py` validates frames, strips metadata and invisible RGB noise,
+and generates the playback header and resource manifest. It does not quantize
+visible color or alpha. These tools are not run during an ordinary build; the
+rendered assets are checked in.
 
 The application uses `G_APPLICATION_NON_UNIQUE` because it is a command-line
 prompt helper. Each invocation must use its own arguments instead of activating

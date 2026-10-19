@@ -2,7 +2,6 @@
 <gresources>
   <gresource prefix="/io/github/kristopher/DestructiveConfirm">
     <file compressed="true">style.css</file>
-    <file compressed="true">fire-animation.css</file>
     <file>fire/000.png</file>
     <file>fire/001.png</file>
     <file>fire/002.png</file>
@@ -87,5 +86,77 @@
     <file>fire/081.png</file>
     <file>fire/082.png</file>
     <file>fire/083.png</file>
+    <file>fire/084.png</file>
+    <file>fire/085.png</file>
+    <file>fire/086.png</file>
+    <file>fire/087.png</file>
+    <file>fire/088.png</file>
+    <file>fire/089.png</file>
+    <file>fire/090.png</file>
+    <file>fire/091.png</file>
+    <file>fire/092.png</file>
+    <file>fire/093.png</file>
+    <file>fire/094.png</file>
+    <file>fire/095.png</file>
+    <file>fire/096.png</file>
+    <file>fire/097.png</file>
+    <file>fire/098.png</file>
+    <file>fire/099.png</file>
+    <file>fire/100.png</file>
+    <file>fire/101.png</file>
+    <file>fire/102.png</file>
+    <file>fire/103.png</file>
+    <file>fire/104.png</file>
+    <file>fire/105.png</file>
+    <file>fire/106.png</file>
+    <file>fire/107.png</file>
+    <file>fire/108.png</file>
+    <file>fire/109.png</file>
+    <file>fire/110.png</file>
+    <file>fire/111.png</file>
+    <file>fire/112.png</file>
+    <file>fire/113.png</file>
+    <file>fire/114.png</file>
+    <file>fire/115.png</file>
+    <file>fire/116.png</file>
+    <file>fire/117.png</file>
+    <file>fire/118.png</file>
+    <file>fire/119.png</file>
+    <file>fire/120.png</file>
+    <file>fire/121.png</file>
+    <file>fire/122.png</file>
+    <file>fire/123.png</file>
+    <file>fire/124.png</file>
+    <file>fire/125.png</file>
+    <file>fire/126.png</file>
+    <file>fire/127.png</file>
+    <file>fire/128.png</file>
+    <file>fire/129.png</file>
+    <file>fire/130.png</file>
+    <file>fire/131.png</file>
+    <file>fire/132.png</file>
+    <file>fire/133.png</file>
+    <file>fire/134.png</file>
+    <file>fire/135.png</file>
+    <file>fire/136.png</file>
+    <file>fire/137.png</file>
+    <file>fire/138.png</file>
+    <file>fire/139.png</file>
+    <file>fire/140.png</file>
+    <file>fire/141.png</file>
+    <file>fire/142.png</file>
+    <file>fire/143.png</file>
+    <file>fire/144.png</file>
+    <file>fire/145.png</file>
+    <file>fire/146.png</file>
+    <file>fire/147.png</file>
+    <file>fire/148.png</file>
+    <file>fire/149.png</file>
+    <file>fire/150.png</file>
+    <file>fire/151.png</file>
+    <file>fire/152.png</file>
+    <file>fire/153.png</file>
+    <file>fire/154.png</file>
+    <file>fire/155.png</file>
   </gresource>
 </gresources>

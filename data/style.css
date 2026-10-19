@@ -1,13 +1,27 @@
-@import url("resource:///io/github/kristopher/DestructiveConfirm/fire-animation.css");
-
-window.destructive-confirm-compact {
+window.destructive-confirm-compact,
+window.destructive-confirm-shell,
+.destructive-confirm-alert {
   background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.destructive-confirm-card,
+.destructive-confirm-alert-card {
+  background: @window_bg_color;
+  border-radius: 14px;
 }
 
 .destructive-confirm-card {
-  background: @window_bg_color;
-  border-radius: 14px;
   padding: 20px;
+}
+
+.destructive-confirm-fire-space {
+  margin: 56px;
+}
+
+.destructive-confirm-high-contrast .destructive-confirm-fire-space {
+  margin: 0;
 }
 
 .destructive-confirm-card button {
@@ -16,19 +30,12 @@ window.destructive-confirm-compact {
   border-radius: 10px;
 }
 
-/* A transparent border reserves space outside the red button face. Nine-slice
- * rendering preserves the corners and flame thickness at different sizes. */
+/* Fire is a non-interactive layer, not padding or part of the button. */
 button.destructive-action {
-  border: 16px solid transparent;
-  border-radius: 26px;
-  border-image-source: url("resource:///io/github/kristopher/DestructiveConfirm/fire/036.png");
-  border-image-slice: 52;
-  border-image-width: 26px;
-  border-image-repeat: stretch;
+  border: 1px solid #d84e32;
+  border-radius: 10px;
   background-color: #871525;
   background-image: linear-gradient(to bottom, #741426, #a6222c);
-  background-origin: padding-box;
-  background-clip: padding-box;
   color: #ffffff;
   box-shadow: none;
   text-shadow: none;
@@ -52,7 +59,6 @@ button.destructive-action label {
   background: #a51d2d;
   border: 1px solid #ffffff;
   border-radius: 10px;
-  border-image-source: none;
   animation: none;
 }
 

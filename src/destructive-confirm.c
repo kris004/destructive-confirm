@@ -2,6 +2,8 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 
+#include "fire-overlay.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -92,6 +94,8 @@ update_effect_preferences(GObject *object, GParamSpec *pspec,
   } else {
     gtk_widget_remove_css_class(widget, "destructive-confirm-high-contrast");
   }
+  fire_overlay_set_preferences(widget, animations && !high_contrast,
+                                !high_contrast);
 }
 
 static void
@@ -146,9 +150,24 @@ show_alert_dialog(AppState *state) {
                                            ADW_RESPONSE_DESTRUCTIVE);
   g_signal_connect(alert, "response", G_CALLBACK(on_response), state);
 
+  /* Wrap the content once; response buttons and their handlers stay intact. */
+  GtkWidget *content = adw_dialog_get_child(dialog);
+  GtkWidget *button = adw_dialog_get_default_widget(dialog);
+  g_object_ref(content);
+  adw_dialog_set_child(dialog, NULL);
+  GtkWidget *overlay = fire_overlay_new(content, button, GTK_WIDGET(dialog));
+  g_object_unref(content);
+  gtk_widget_add_css_class(overlay, "destructive-confirm-alert-card");
+  gtk_widget_add_css_class(overlay, "destructive-confirm-fire-space");
+  gtk_widget_add_css_class(GTK_WIDGET(dialog), "destructive-confirm-alert");
+  adw_dialog_set_child(dialog, overlay);
   adw_dialog_set_title(dialog, state->title);
   watch_effect_preferences(GTK_WIDGET(dialog));
   adw_dialog_present(dialog, NULL);
+  GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(dialog));
+  if (root != NULL) {
+    gtk_widget_add_css_class(GTK_WIDGET(root), "destructive-confirm-shell");
+  }
 }
 
 static void
@@ -166,7 +185,6 @@ show_compact_window(AppState *state) {
   gtk_widget_add_css_class(window, "destructive-confirm-compact");
 
   card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
-  gtk_widget_add_css_class(card, "destructive-confirm-card");
 
   confirm_button = gtk_button_new_with_label(state->confirm_label);
   gtk_widget_add_css_class(confirm_button, "destructive-action");
@@ -182,7 +200,10 @@ show_compact_window(AppState *state) {
 
   gtk_box_append(GTK_BOX(card), confirm_button);
   gtk_box_append(GTK_BOX(card), cancel_button);
-  gtk_window_set_child(GTK_WINDOW(window), card);
+  GtkWidget *overlay = fire_overlay_new(card, confirm_button, window);
+  gtk_widget_add_css_class(overlay, "destructive-confirm-card");
+  gtk_widget_add_css_class(overlay, "destructive-confirm-fire-space");
+  gtk_window_set_child(GTK_WINDOW(window), overlay);
   gtk_window_set_default_widget(GTK_WINDOW(window), confirm_button);
   gtk_widget_grab_focus(confirm_button);
 

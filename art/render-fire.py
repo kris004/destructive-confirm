@@ -1,7 +1,7 @@
 """Render the original fire-border artwork with Blender 5.0.
 
 Run with Blender's --background --factory-startup --python, then pass:
-    -- --output /tmp/fire-frames [--frames 2,18,50]
+    -- --output /tmp/fire-frames [--frames 4,36,90]
 
 The scene is procedural and deterministic. No simulation cache, downloaded
 textures, add-ons, user startup scene, or external assets are needed.
@@ -16,37 +16,38 @@ import sys
 import bpy
 from mathutils import Vector
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from fire_config import (
+    FPS, INTRO, LOOP, WIDTH, HEIGHT, RADIUS, HALF_WIDTH, HALF_HEIGHT,
+    FLAME_HEIGHT_MIN, FLAME_HEIGHT_MAX, SPARK_HOLD, SWEEP_TIME,
+)
 
-FPS = 24
-INTRO = 36
-LOOP = 48
-WIDTH = 384
-HEIGHT = 128
-RADIUS = 20
-HALF_WIDTH = 160
-HALF_HEIGHT = 32
 PERIMETER = 4 * (HALF_WIDTH + HALF_HEIGHT - 2 * RADIUS) + math.tau * RADIUS
 RNG = random.Random(61208)
+ROWS = 24
 
 
 def perimeter_position(fraction):
     """Clockwise rounded rectangle, starting at the top-left tangent."""
     distance = (fraction % 1.0) * PERIMETER
+    cx, cy = HALF_WIDTH - RADIUS, HALF_HEIGHT - RADIUS
+    quarter = math.pi / 2 * RADIUS
     segments = [
-        (280, lambda d: (-140 + d, 32, 0, 1)),
-        (math.pi * 10, lambda d: arc(140, 12, math.pi / 2 - d / 20)),
-        (24, lambda d: (160, 12 - d, 1, 0)),
-        (math.pi * 10, lambda d: arc(140, -12, -d / 20)),
-        (280, lambda d: (140 - d, -32, 0, -1)),
-        (math.pi * 10, lambda d: arc(-140, -12, -math.pi / 2 - d / 20)),
-        (24, lambda d: (-160, -12 + d, -1, 0)),
-        (math.pi * 10, lambda d: arc(-140, 12, math.pi - d / 20)),
+        (2 * cx, lambda d: (-cx + d, HALF_HEIGHT, 0, 1)),
+        (quarter, lambda d: arc(cx, cy, math.pi / 2 - d / RADIUS)),
+        (2 * cy, lambda d: (HALF_WIDTH, cy - d, 1, 0)),
+        (quarter, lambda d: arc(cx, -cy, -d / RADIUS)),
+        (2 * cx, lambda d: (cx - d, -HALF_HEIGHT, 0, -1)),
+        (quarter, lambda d: arc(-cx, -cy, -math.pi / 2 - d / RADIUS)),
+        (2 * cy, lambda d: (-HALF_WIDTH, -cy + d, -1, 0)),
+        (quarter, lambda d: arc(-cx, cy, math.pi - d / RADIUS)),
     ]
     for length, evaluate in segments:
         if distance <= length:
             return evaluate(distance)
         distance -= length
-    return -140, 32, 0, 1
+    return -cx, HALF_HEIGHT, 0, 1
 
 
 def arc(x, y, angle):
@@ -139,14 +140,14 @@ def flame_material():
 
 def ribbon(name, material):
     mesh = bpy.data.meshes.new(name)
-    vertices = [(0, 0, 0)] * 26
-    faces = [(i * 2, i * 2 + 1, i * 2 + 3, i * 2 + 2) for i in range(12)]
+    vertices = [(0, 0, 0)] * ((ROWS + 1) * 2)
+    faces = [(i * 2, i * 2 + 1, i * 2 + 3, i * 2 + 2) for i in range(ROWS)]
     mesh.from_pydata(vertices, [], faces)
     uv = mesh.uv_layers.new()
     for polygon in mesh.polygons:
         for index in polygon.loop_indices:
             vertex = mesh.loops[index].vertex_index
-            uv.data[index].uv = (vertex % 2, (vertex // 2) / 12)
+            uv.data[index].uv = (vertex % 2, (vertex // 2) / ROWS)
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.collection.objects.link(obj)
     obj.data.materials.append(material)
@@ -159,7 +160,7 @@ def setup_scene():
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
-    scene.cycles.samples = 12
+    scene.cycles.samples = 24
     scene.cycles.use_denoising = False
     scene.cycles.transparent_max_bounces = 24
     scene.render.threads_mode = "FIXED"
@@ -221,21 +222,22 @@ def setup_scene():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--frames", help="Comma-separated frame indices, 0..83")
+    parser.add_argument("--frames", help=f"Frame indices, 0..{INTRO + LOOP - 1}")
     parser.add_argument("--scene", type=Path, help="Optional editable .blend output")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
     args.output.mkdir(parents=True, exist_ok=True)
     frames = (range(INTRO + LOOP) if not args.frames else
               [int(value) for value in args.frames.split(",")])
     if any(frame < 0 or frame >= INTRO + LOOP for frame in frames):
-        parser.error("Frame indices must be between 0 and 83")
+        parser.error(f"Frame indices must be between 0 and {INTRO + LOOP - 1}")
     scene = setup_scene()
     material, noise_offset = flame_material()
     flames = []
     for index in range(92):
         flames.append((ribbon(f"Wisp {index:02d}", material), index / 92,
-                       RNG.uniform(0, math.tau), RNG.uniform(11, 29),
-                       RNG.uniform(2.0, 4.5)))
+                       RNG.uniform(0, math.tau),
+                       RNG.uniform(FLAME_HEIGHT_MIN, FLAME_HEIGHT_MAX),
+                       RNG.uniform(6.0, 11.0)))
 
     curve = bpy.data.curves.new("Ignited perimeter", "CURVE")
     curve.dimensions = "3D"
@@ -249,6 +251,10 @@ def main():
     ring.data.materials.append(emission_material("Hot gold", (1, 0.20, 0.01), 3))
 
     spark_material = emission_material("Ignition sparks", (1, 0.75, 0.3), 7)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=1)
+    head = bpy.context.object
+    head.name = "Visible white-hot ignition core"
+    head.data.materials.append(emission_material("White-hot core", (1, 0.9, 0.7), 12))
     sparks = []
     for index in range(14):
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1)
@@ -260,7 +266,7 @@ def main():
     for frame in frames:
         time = frame / FPS
         phase = math.tau * (time - INTRO / FPS) / (LOOP / FPS)
-        progress = smooth((time - 0.16) / 1.12)
+        progress = smooth((time - SPARK_HOLD) / SWEEP_TIME)
         noise_offset.default_value = (0.65 * math.sin(phase),
                                       0.85 * math.cos(phase), 0)
         for obj, position, seed, height, width in flames:
@@ -271,12 +277,13 @@ def main():
             tangent = Vector((ny, -nx))
             normal = Vector((nx, ny))
             length = height * lit * (0.82 + 0.18 * math.sin(phase + seed))
-            for row in range(13):
-                v = row / 12
-                bend = (math.sin(phase * 2 + seed + v * 5) * 5 * v ** 1.5)
+            for row in range(ROWS + 1):
+                v = row / ROWS
+                bend = (math.sin(phase + seed + v * 4) * 18 * v ** 1.5)
                 center = Vector((x, y)) + normal * (length * v)
                 center += tangent * bend
-                half = width * (1 - v) ** 0.8 * lit
+                billow = 1 + 0.24 * math.sin(phase * 2 + seed + v * 9)
+                half = width * (1 - v) ** 0.8 * lit * billow
                 for side in range(2):
                     point = center + tangent * half * (side * 2 - 1)
                     obj.data.vertices[row * 2 + side].co = (*point, 1)
@@ -287,16 +294,20 @@ def main():
             point.co = (x, y, 1.3, 1)
             lit = smooth((progress - fraction) * PERIMETER / 8)
             point.radius = lit * (0.85 + 0.15 * math.sin(phase * 2 + index))
+        x, y, nx, ny = perimeter_position(progress)
+        fade = 1 - smooth((time - SPARK_HOLD - SWEEP_TIME) / 0.3)
+        pulse = 1 + 0.28 * math.sin(time * 20) * math.exp(-time * 2)
+        # Keep the core outside the native face, rather than hiding half of it.
+        head.location = (x + nx * 8, y + ny * 8, 3)
+        head.scale = (8 * pulse * fade, 8 * pulse * fade, 2 * fade)
+        head.hide_render = fade < 0.01
         for index, (obj, angle, speed) in enumerate(sparks):
-            head = progress if progress < 1 else 0
-            x, y, nx, ny = perimeter_position(head)
-            burst = math.exp(-((time - 0.12) / 0.15) ** 2)
-            chase = 0.5 if 0.16 < time < 1.28 else 0
-            size = (burst + chase) * (0.35 + 0.3 * math.sin(index))
-            distance = ((time * 1.9 + index / 14) % 1) * speed
+            burst = math.exp(-((time - 0.18) / 0.26) ** 2)
+            size = fade * (burst + 0.6) * (1.2 + 0.7 * math.sin(index))
+            distance = ((time * 0.9 + index / 14) % 1) * speed * 2.2
             obj.location = (x + math.cos(angle) * distance,
-                            y + math.sin(angle) * distance, 2)
-            obj.scale = (size, size * 2.3, size)
+                            y + math.sin(angle) * distance + 8, 2)
+            obj.scale = (size, size * 2.8, size)
             obj.hide_render = size < 0.02
         scene.render.filepath = str(args.output / f"{frame:03d}.png")
         bpy.ops.render.render(write_still=True)

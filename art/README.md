@@ -7,16 +7,22 @@ textures, stock footage, external add-ons, fluid caches, or user startup files.
 The Python scene recipe is the editable source; a `.blend` file is not needed
 for reproduction.
 
-The sequence is 24 fps:
+The sequence is 30 fps, interpolated by GTK at the display's frame rate:
 
-- `000` through `035`: spark, clockwise ignition, and settling (1.5 seconds).
-- `036` through `083`: seamlessly repeating burning ring (2 seconds).
+- `000` through `065`: visible spark, clockwise ignition, and settling (2.2 seconds).
+- `066` through `155`: seamlessly repeating burning ring (3 seconds).
 
-Frames are transparent 384 x 128 PNGs. The reference face is 320 x 64 pixels,
-with 32 pixels of transparent space on each side. GTK uses 52-pixel source
-slices at 26 logical pixels, reserving a 16-pixel decorative border. The
-remaining 10 pixels preserve the rounded corners of the red button face.
-Nothing is rendered into the label area.
+The spark holds for 0.55 seconds before its 1.3-second sweep. Its white-hot
+core sits outside the opaque native button face, where it remains visible.
+Flame ribbons range from 44 to 116 source pixels tall, four times the earlier
+11–29 pixel geometry, with more mesh segments and slower billowing motion.
+
+Frames are transparent 640 x 320 PNGs. The reference face is 320 x 64 source
+pixels, at half scale in logical pixels. Shared constants in `fire_config.py`
+describe the source slices and native drawing geometry. The overlay draws
+eight patches around the actual button bounds, not into the label area. The
+larger flames can overlap surrounding space; no decorative padding enlarges
+the native button or its hit target.
 
 ## Regenerate
 
@@ -45,10 +51,10 @@ Some distributions version the Blender executable, for example `blender-5.0`.
 The renderer uses four CPU threads and does not change the running desktop
 Blender instance or its preferences. It does not require a GPU.
 
-For a quick art check, add `--frames 3,18,50` after the output argument. To save
+For a quick art check, add `--frames 4,36,90` after the output argument. To save
 the constructed scene for manual editing, add `--scene "$scratch/fire.blend"`.
 The scene shows the last rendered frame; the script drives animation geometry.
-The packer requires the complete 84-frame render, not just preview frames.
+The packer requires the complete 156-frame render, not just preview frames.
 
 After verifying the shipped files, remove the task-owned scratch directory:
 
@@ -56,7 +62,13 @@ After verifying the shipped files, remove the task-owned scratch directory:
 rm -r -- "$scratch"
 ```
 
-`pack-fire.py` strips render metadata and generates `data/fire-animation.css`
-and `data/destructive-confirm.gresource.xml`. Commit these together with all
-84 frames. Changes to frame count, timing, reference geometry, or nine-slice
-dimensions must be kept consistent between the two scripts and `data/style.css`.
+`pack-fire.py` strips render metadata, clears noisy RGB under zero alpha, and
+generates `data/fire-art.h` and `data/destructive-confirm.gresource.xml`. Visible
+RGBA pixels are not quantized. Commit these together with all 156 frames.
+Change frame count, timing, reference geometry, or nine-slice dimensions in
+`fire_config.py` and regenerate the header and artwork together.
+
+`make smoke-gui` also exercises the real native button/alert constructors and
+response handlers, including normal hit bounds, Cancel, Escape, close, keyboard
+activation, and motion preferences. For a motion preview, prefer a display-rate
+video capture over a low-frame-rate GIF, which can hide interpolation quality.

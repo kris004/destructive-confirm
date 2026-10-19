@@ -1,9 +1,10 @@
 APP := destructive-confirm
 COMPAT_APP := power-confirm
 BUILD_DIR := build
-SRC := src/destructive-confirm.c
+SRC := src/destructive-confirm.c src/fire-overlay.c
+HEADERS := src/fire-overlay.h data/fire-art.h
 RESOURCE_XML := data/destructive-confirm.gresource.xml
-RESOURCE_FILES := data/style.css data/fire-animation.css $(wildcard data/fire/*.png)
+RESOURCE_FILES := data/style.css $(wildcard data/fire/*.png)
 RESOURCE_SRC := $(BUILD_DIR)/resources.c
 RESOURCE_OBJ := $(BUILD_DIR)/resources.o
 PKGS := gtk4 libadwaita-1
@@ -22,6 +23,7 @@ WARN_CFLAGS := -std=c17 -Wall -Wextra -Wpedantic -Wformat=2 -Wshadow \
 PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PKGS))
 PKG_LIBS := $(shell $(PKG_CONFIG) --libs $(PKGS))
 CFLAGS ?= -O2 -g
+LDLIBS += -lm
 
 .PHONY: all check smoke-gui install clean
 
@@ -38,16 +40,20 @@ $(RESOURCE_SRC): $(RESOURCE_XML) $(RESOURCE_FILES) | $(BUILD_DIR)
 $(RESOURCE_OBJ): $(RESOURCE_SRC)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(PKG_CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/$(APP): $(SRC) $(RESOURCE_OBJ) | $(BUILD_DIR)
+$(BUILD_DIR)/$(APP): $(SRC) $(HEADERS) $(RESOURCE_OBJ) | $(BUILD_DIR)
 	$(CC) $(WARN_CFLAGS) $(CFLAGS) $(CPPFLAGS) $(PKG_CFLAGS) $(SRC) $(RESOURCE_OBJ) -o $@ $(LDFLAGS) $(PKG_LIBS) $(LDLIBS)
+
+$(BUILD_DIR)/test-dialog: tests/test-dialog.c $(SRC) $(HEADERS) $(RESOURCE_OBJ)
+	$(CC) $(WARN_CFLAGS) $(CFLAGS) $(CPPFLAGS) $(PKG_CFLAGS) tests/test-dialog.c src/fire-overlay.c $(RESOURCE_OBJ) -o $@ $(LDFLAGS) $(PKG_LIBS) $(LDLIBS)
 
 check: $(BUILD_DIR)/$(APP)
 	$(BUILD_DIR)/$(APP) --help >/dev/null
 	$(BUILD_DIR)/$(APP) --does-not-exist >/dev/null 2>&1; test $$? -eq 2
 
-smoke-gui: $(BUILD_DIR)/$(APP)
-	G_DEBUG=fatal-warnings $(TIMEOUT) 4 $(BUILD_DIR)/$(APP) --title 'Destructive action test' --confirm-label 'Delete' --cancel-label 'Cancel'; test $$? -eq 124
-	G_DEBUG=fatal-warnings $(TIMEOUT) 4 $(BUILD_DIR)/$(APP) --title 'Destructive action test' --text 'Delete this item?' --confirm-label 'Delete' --cancel-label 'Cancel'; test $$? -eq 124
+smoke-gui: $(BUILD_DIR)/$(APP) $(BUILD_DIR)/test-dialog
+	G_DEBUG=fatal-warnings $(BUILD_DIR)/test-dialog
+	G_DEBUG=fatal-warnings $(TIMEOUT) 6 $(BUILD_DIR)/$(APP) --title 'Destructive action test' --confirm-label 'Delete' --cancel-label 'Cancel'; test $$? -eq 124
+	G_DEBUG=fatal-warnings $(TIMEOUT) 6 $(BUILD_DIR)/$(APP) --title 'Destructive action test' --text 'Delete this item?' --confirm-label 'Delete' --cancel-label 'Cancel'; test $$? -eq 124
 
 install: $(BUILD_DIR)/$(APP)
 	$(INSTALL) -Dm0755 $(BUILD_DIR)/$(APP) $(DESTDIR)$(BINDIR)/$(APP)
