@@ -1,3 +1,5 @@
+@import url("resource:///io/github/kristopher/DestructiveConfirm/fire-animation.css");
+
 window.destructive-confirm-compact {
   background: transparent;
 }
@@ -14,52 +16,43 @@ window.destructive-confirm-compact {
   border-radius: 10px;
 }
 
-/* Keep the fire behind native button content, focus rings and hit targets. */
+/* A transparent border reserves space outside the red button face. Nine-slice
+ * rendering preserves the corners and flame thickness at different sizes. */
 button.destructive-action {
+  border: 16px solid transparent;
+  border-radius: 26px;
+  border-image-source: url("resource:///io/github/kristopher/DestructiveConfirm/fire/036.png");
+  border-image-slice: 52;
+  border-image-width: 26px;
+  border-image-repeat: stretch;
   background-color: #871525;
-  background-image:
-    linear-gradient(to right, transparent, rgba(48, 4, 12, 0.64) 38%,
-                    rgba(48, 4, 12, 0.64) 62%, transparent),
-    url("resource:///io/github/kristopher/DestructiveConfirm/flames-core.svg"),
-    url("resource:///io/github/kristopher/DestructiveConfirm/flames.svg"),
-    linear-gradient(to bottom, #651221, #b32621);
-  background-size: 100% 100%, 108% 34px, 112% 48px, 100% 100%;
-  /* Put the transparent sampling gutters below the button's clip. */
-  background-position: center, 50% calc(100% + 3px), 50% calc(100% + 3px), center;
-  background-repeat: no-repeat;
-  border: 1px solid #ed713c;
+  background-image: linear-gradient(to bottom, #741426, #a6222c);
+  background-origin: padding-box;
+  background-clip: padding-box;
   color: #ffffff;
-  box-shadow: 0 0 12px 1px rgba(239, 82, 24, 0.30),
-              inset 0 1px rgba(255, 209, 132, 0.18);
-  text-shadow: 0 1px 2px #29040b, 0 0 4px #29040b;
-}
-
-.destructive-confirm-animated button.destructive-action {
-  animation: destructive-confirm-fire 2.8s ease-in-out infinite;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 button.destructive-action:hover {
-  background-color: #a51d25;
-  border-color: #ffc071;
+  background-image: linear-gradient(to bottom, #9c1c30, #c32a30);
 }
 
 button.destructive-action:active {
-  background-color: #68101e;
-  background-image: linear-gradient(to bottom, #68101e, #a12520);
-  box-shadow: inset 0 2px 4px rgba(36, 0, 6, 0.5);
-  animation: none;
+  background-image: linear-gradient(to bottom, #5c101d, #8e1d28);
 }
 
 button.destructive-action label {
   color: #ffffff;
-  text-shadow: 0 1px 2px #29040b, 0 0 4px #29040b;
+  text-shadow: none;
 }
 
 /* Never trade a high-contrast preference for decoration. */
 .destructive-confirm-high-contrast button.destructive-action {
   background: #a51d2d;
-  border-color: #ffffff;
-  box-shadow: none;
+  border: 1px solid #ffffff;
+  border-radius: 10px;
+  border-image-source: none;
   animation: none;
 }
 
@@ -73,26 +66,4 @@ button.destructive-action label {
 
 .destructive-confirm-high-contrast button.destructive-action label {
   text-shadow: none;
-}
-
-/* Animate only paint: neither button geometry nor its label ever moves. */
-@keyframes destructive-confirm-fire {
-  0%, 100% {
-    background-size: 100% 100%, 108% 34px, 112% 48px, 100% 100%;
-    background-position: center, 50% calc(100% + 3px), 50% calc(100% + 3px), center;
-    box-shadow: 0 0 12px 1px rgba(239, 82, 24, 0.30),
-                inset 0 1px rgba(255, 209, 132, 0.18);
-  }
-  30% {
-    background-size: 100% 100%, 111% 40px, 108% 43px, 100% 100%;
-    background-position: center, 70% calc(100% + 3px), 30% calc(100% + 3px), center;
-    box-shadow: 0 0 17px 2px rgba(255, 101, 27, 0.44),
-                inset 0 1px rgba(255, 209, 132, 0.25);
-  }
-  65% {
-    background-size: 100% 100%, 105% 31px, 115% 52px, 100% 100%;
-    background-position: center, 30% calc(100% + 3px), 70% calc(100% + 3px), center;
-    box-shadow: 0 0 14px 1px rgba(255, 87, 24, 0.36),
-                inset 0 1px rgba(255, 209, 132, 0.20);
-  }
 }

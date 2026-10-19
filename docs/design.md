@@ -50,28 +50,42 @@ heading/body, so the custom compact path avoids a blank reserved text area.
 The current local theme did not give the destructive response the high-contrast
 red button treatment expected for this prompt, so the helper also installs a
 small process-local CSS provider for `button.destructive-action`. The destructive
-button uses an ember-red background, two layers of flame artwork, and a warm
-glow. A dark scrim behind the white label keeps the action readable. Cancel and
-the rest of the GTK theme are unchanged.
+button has an ember-red face, white label, and a transparent decorative border
+containing Blender-rendered fire. A spark ignites at the top-left, the flame
+travels clockwise, and after 1.5 seconds a two-second burning loop takes over.
+The label and button face are not part of the artwork. Cancel and the rest of
+the GTK theme are unchanged.
 
-GTK CSS keyframes gently vary flame size, position, and glow. They only change
-painting, never button geometry, focus, keyboard activation, or hit targets.
-Both the compact window and the native alert responses use the same CSS without
+The border reserves 16 logical pixels around the red face so fire does not
+overlap adjacent controls. Native nine-slice border images preserve corner
+shape and flame thickness at different label lengths. They stretch, never tile.
+The native focus outline follows the full button, including this border.
+
+GTK CSS keyframes select frames at 24 fps with discrete steps, rather than
+cross-fading or rerendering fire. Only painting changes during the sequence;
+geometry, focus, keyboard activation, and hit targets remain stable. Both the
+compact window and native alert responses use the same stylesheet, without
 reaching into libadwaita's private widget tree.
 
 The effect follows `GtkSettings:gtk-enable-animations` and, when built with GTK
 4.22 or newer, `GtkSettings:gtk-interface-reduced-motion`. With motion disabled,
-the flames remain still. High-contrast mode removes flames and glow entirely in
-favor of a solid red button with a white border. Preference changes are applied
-while the dialog is open; no global GTK settings or CSS are written.
+the ring is shown already ignited and still. High-contrast mode removes the fire
+and decorative border in favor of a normally sized solid red button with a
+white border. Preference changes are applied while the dialog is open; no
+global GTK settings or CSS are written.
 
-The stylesheet and original SVG flame layers live in `data/` and are compiled
-into a GResource inside the executable using `glib-compile-resources`. The
-installed helper remains a single self-contained binary.
+The stylesheet and 84 original RGBA frames live in `data/` and are compiled into
+a GResource inside the executable using `glib-compile-resources`. PNG files are
+already compressed and are not compressed again in the resource bundle. The
+installed helper remains a single self-contained binary, with no Blender,
+video decoder, playback process, or on-disk asset directory needed at runtime.
 
-The flame layers cover the button once rather than using `repeat-x`, which
-produced horizontal seams with GTK's GPU renderer. Transparent bottom padding
-is positioned below the button's clip.
+`art/render-fire.py` creates a deterministic Blender 5.0 scene with a rounded
+emissive perimeter, turbulent translucent flame ribbons, sparks, and compositor
+glow. This is procedural rendered artwork, not a baked fluid simulation or
+stock footage. `art/pack-fire.py` validates frames, strips metadata, and writes
+the stepped animations and resource manifest. These tools are not run during
+an ordinary build; the rendered assets are checked in.
 
 The application uses `G_APPLICATION_NON_UNIQUE` because it is a command-line
 prompt helper. Each invocation must use its own arguments instead of activating

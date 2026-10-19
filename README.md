@@ -19,9 +19,12 @@ Dependencies are discovered with `pkg-config`:
 The build also needs GLib's `glib-compile-resources`. Styling and flame artwork
 are embedded in the binary; no asset directory is needed after installation.
 
-The destructive button has animated flames and an ember glow. Animation follows
-GTK's animation preference (and reduced-motion preference on GTK 4.22+);
-high-contrast mode uses a plain red button instead.
+The destructive button has a Blender-rendered fire border: a spark ignites,
+flame travels clockwise around the button, then settles into a burning ring.
+Animation follows GTK's animation preference (and reduced-motion preference on
+GTK 4.22+); high-contrast mode uses a plain red button instead. Blender is only
+needed to regenerate the artwork, not to build or run the helper. See
+[`art/README.md`](art/README.md) for the reproducible scene recipe.
 
 ## Install
 
