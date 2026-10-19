@@ -8,44 +8,6 @@
 #define APP_ID "io.github.kristopher.DestructiveConfirm"
 #define EXIT_USAGE 2
 
-static const char css[] =
-    "window.destructive-confirm-compact {"
-    "  background: transparent;"
-    "}"
-    ".destructive-confirm-card {"
-    "  background: @window_bg_color;"
-    "  border-radius: 14px;"
-    "  padding: 20px;"
-    "}"
-    ".destructive-confirm-card button {"
-    "  min-width: 260px;"
-    "  min-height: 44px;"
-    "  border-radius: 10px;"
-    "}"
-    "button.destructive-action {"
-    "  background: #c01c28;"
-    "  background-color: #c01c28;"
-    "  background-image: none;"
-    "  color: #ffffff;"
-    "  text-shadow: none;"
-    "}"
-    "button.destructive-action:hover {"
-    "  background: #e01b24;"
-    "  background-color: #e01b24;"
-    "  background-image: none;"
-    "  color: #ffffff;"
-    "}"
-    "button.destructive-action:active {"
-    "  background: #a51d2d;"
-    "  background-color: #a51d2d;"
-    "  background-image: none;"
-    "  color: #ffffff;"
-    "}"
-    "button.destructive-action label {"
-    "  color: #ffffff;"
-    "  text-shadow: none;"
-    "}";
-
 typedef struct {
   char *title;
   char *text;
@@ -57,6 +19,9 @@ typedef struct {
 
 static void finish(AppState *state, int exit_status);
 static void install_css(void);
+static void update_effect_preferences(GObject *object, GParamSpec *pspec,
+                                      gpointer user_data);
+static void watch_effect_preferences(GtkWidget *widget);
 static gboolean has_text(const char *text);
 static void show_alert_dialog(AppState *state);
 static void show_compact_window(AppState *state);
@@ -88,10 +53,62 @@ install_css(void) {
   }
 
   GtkCssProvider *provider = gtk_css_provider_new();
-  gtk_css_provider_load_from_string(provider, css);
+  gtk_css_provider_load_from_resource(
+      provider, "/io/github/kristopher/DestructiveConfirm/style.css");
   gtk_style_context_add_provider_for_display(
       display, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(provider);
+}
+
+static void
+update_effect_preferences(GObject *object, GParamSpec *pspec,
+                          gpointer user_data) {
+  GtkWidget *widget = GTK_WIDGET(user_data);
+  GtkSettings *settings = gtk_widget_get_settings(widget);
+  AdwStyleManager *style_manager =
+      adw_style_manager_get_for_display(gtk_widget_get_display(widget));
+  gboolean animations = TRUE;
+  gboolean high_contrast = adw_style_manager_get_high_contrast(style_manager);
+
+  (void)object;
+  (void)pspec;
+
+  g_object_get(settings, "gtk-enable-animations", &animations, NULL);
+#if GTK_CHECK_VERSION(4, 22, 0)
+  GtkReducedMotion reduced_motion = GTK_REDUCED_MOTION_NO_PREFERENCE;
+
+  g_object_get(settings, "gtk-interface-reduced-motion", &reduced_motion, NULL);
+  animations = animations && reduced_motion == GTK_REDUCED_MOTION_NO_PREFERENCE;
+#endif
+
+  if (animations && !high_contrast) {
+    gtk_widget_add_css_class(widget, "destructive-confirm-animated");
+  } else {
+    gtk_widget_remove_css_class(widget, "destructive-confirm-animated");
+  }
+
+  if (high_contrast) {
+    gtk_widget_add_css_class(widget, "destructive-confirm-high-contrast");
+  } else {
+    gtk_widget_remove_css_class(widget, "destructive-confirm-high-contrast");
+  }
+}
+
+static void
+watch_effect_preferences(GtkWidget *widget) {
+  GtkSettings *settings = gtk_widget_get_settings(widget);
+  AdwStyleManager *style_manager =
+      adw_style_manager_get_for_display(gtk_widget_get_display(widget));
+
+  update_effect_preferences(NULL, NULL, widget);
+  g_signal_connect_object(settings, "notify::gtk-enable-animations",
+                          G_CALLBACK(update_effect_preferences), widget, 0);
+#if GTK_CHECK_VERSION(4, 22, 0)
+  g_signal_connect_object(settings, "notify::gtk-interface-reduced-motion",
+                          G_CALLBACK(update_effect_preferences), widget, 0);
+#endif
+  g_signal_connect_object(style_manager, "notify::high-contrast",
+                          G_CALLBACK(update_effect_preferences), widget, 0);
 }
 
 static gboolean
@@ -130,6 +147,7 @@ show_alert_dialog(AppState *state) {
   g_signal_connect(alert, "response", G_CALLBACK(on_response), state);
 
   adw_dialog_set_title(dialog, state->title);
+  watch_effect_preferences(GTK_WIDGET(dialog));
   adw_dialog_present(dialog, NULL);
 }
 
@@ -176,6 +194,7 @@ show_compact_window(AppState *state) {
   g_signal_connect(window, "close-request", G_CALLBACK(on_close_request),
                    state);
 
+  watch_effect_preferences(window);
   gtk_window_present(GTK_WINDOW(window));
 }
 

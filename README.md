@@ -16,6 +16,13 @@ Dependencies are discovered with `pkg-config`:
 - GTK 4
 - libadwaita 1
 
+The build also needs GLib's `glib-compile-resources`. Styling and flame artwork
+are embedded in the binary; no asset directory is needed after installation.
+
+The destructive button has animated flames and an ember glow. Animation follows
+GTK's animation preference (and reduced-motion preference on GTK 4.22+);
+high-contrast mode uses a plain red button instead.
+
 ## Install
 
 ```sh

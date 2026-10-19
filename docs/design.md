@@ -49,9 +49,29 @@ heading/body, so the custom compact path avoids a blank reserved text area.
 
 The current local theme did not give the destructive response the high-contrast
 red button treatment expected for this prompt, so the helper also installs a
-small process-local CSS provider for `button.destructive-action`. That CSS gives
-the destructive button a red background and white text while leaving the rest of
-the GTK theme alone.
+small process-local CSS provider for `button.destructive-action`. The destructive
+button uses an ember-red background, two layers of flame artwork, and a warm
+glow. A dark scrim behind the white label keeps the action readable. Cancel and
+the rest of the GTK theme are unchanged.
+
+GTK CSS keyframes gently vary flame size, position, and glow. They only change
+painting, never button geometry, focus, keyboard activation, or hit targets.
+Both the compact window and the native alert responses use the same CSS without
+reaching into libadwaita's private widget tree.
+
+The effect follows `GtkSettings:gtk-enable-animations` and, when built with GTK
+4.22 or newer, `GtkSettings:gtk-interface-reduced-motion`. With motion disabled,
+the flames remain still. High-contrast mode removes flames and glow entirely in
+favor of a solid red button with a white border. Preference changes are applied
+while the dialog is open; no global GTK settings or CSS are written.
+
+The stylesheet and original SVG flame layers live in `data/` and are compiled
+into a GResource inside the executable using `glib-compile-resources`. The
+installed helper remains a single self-contained binary.
+
+The flame layers cover the button once rather than using `repeat-x`, which
+produced horizontal seams with GTK's GPU renderer. Transparent bottom padding
+is positioned below the button's clip.
 
 The application uses `G_APPLICATION_NON_UNIQUE` because it is a command-line
 prompt helper. Each invocation must use its own arguments instead of activating

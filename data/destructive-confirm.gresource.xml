@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/io/github/kristopher/DestructiveConfirm">
+    <file compressed="true">style.css</file>
+    <file compressed="true">flames.svg</file>
+    <file compressed="true">flames-core.svg</file>
+  </gresource>
+</gresources>
