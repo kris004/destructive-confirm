@@ -17,7 +17,8 @@ PREFIX = "/io/github/kristopher/DestructiveConfirm"
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("frames", type=Path)
-    parser.add_argument("--data", type=Path, default=Path(__file__).resolve().parents[1] / "data")
+    parser.add_argument("--data", type=Path, default=(
+        Path(__file__).resolve().parents[1] / "data/presets/tall-ring"))
     args = parser.parse_args()
     # Validate the complete render before changing any shipped assets.
     images = []

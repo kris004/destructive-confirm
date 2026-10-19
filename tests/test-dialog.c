@@ -60,15 +60,22 @@ test_compact_responses(void) {
     g_assert_true(GTK_IS_BUTTON(confirm));
     g_assert_true(GTK_IS_LABEL(gtk_button_get_child(GTK_BUTTON(confirm))));
     g_assert_cmpstr(gtk_button_get_label(GTK_BUTTON(confirm)), ==, "Delete");
+#if DC_ANIMATION_OVERLAY
+    g_assert_nonnull(fire);
     g_assert_false(gtk_widget_get_can_target(fire));
     g_assert_false(gtk_widget_get_focusable(fire));
+#else
+    g_assert_null(fire);
+#endif
     graphene_rect_t hit_bounds;
     g_assert_true(gtk_widget_compute_bounds(confirm, confirm, &hit_bounds));
     g_assert_false(gtk_widget_contains(confirm, hit_bounds.origin.x - 8, 10));
     g_assert_false(gtk_widget_contains(confirm, 10, hit_bounds.origin.y - 8));
-    /* Fire has not become padding or an enlarged confirmation hit area. */
+    /* The original small ring deliberately used a wider decorative border. */
+#if CONFIRM_ANIMATION != ANIMATION_FIRE_RING
     g_assert_cmpint(abs(gtk_widget_get_height(confirm) -
                          gtk_widget_get_height(cancel)), <=, 2);
+#endif
     graphene_rect_t bounds;
     g_assert_true(gtk_widget_compute_bounds(cancel, confirm, &bounds));
     g_assert_cmpfloat(fabs(bounds.origin.y - hit_bounds.origin.y -
@@ -188,7 +195,7 @@ test_motion_preferences(void) {
   g_object_set(settings, "gtk-enable-animations", TRUE, NULL);
   g_assert_cmpint(gtk_widget_has_css_class(
                      GTK_WIDGET(window), "destructive-confirm-animated"),
-                 ==, !high_contrast);
+                 ==, !high_contrast && DC_ANIMATION_ENABLED);
 #if GTK_CHECK_VERSION(4, 22, 0)
   g_object_set(settings, "gtk-interface-reduced-motion",
                GTK_REDUCED_MOTION_REDUCE, NULL);

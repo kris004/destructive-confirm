@@ -34,6 +34,33 @@ without growing their own GTK code.
 The helper is written in C against GTK 4 and libadwaita. This keeps startup and
 runtime overhead low while using Adwaita's destructive response semantics.
 
+### Compile-time presets
+
+`config.def.h` is the tracked template. The first build creates local `config.h`
+without overwriting an existing file. `CONFIRM_ANIMATION` selects `tall-ring`
+(default), `fire-ring`, `svg-flames`, or `none` through named C macros. There is
+no runtime selector and no command-line contract change.
+
+`src/animation-config.h` validates the selection for both the application and
+the build. The Makefile preprocesses that header into a small included
+`preset.mk`; it does not execute target code or parse arbitrary C itself.
+The generated makefile is replaced only when the selection changes, avoiding
+unnecessary rebuilds while allowing incremental switches between even older
+configuration headers. Invalid/misspelled selections fail the build.
+
+The chosen preset's XML manifest and local assets are the sole resource inputs.
+Other presets stay in the source repository, not in the executable. Only
+`tall-ring` links the fire-overlay player. `none` embeds just its stylesheet
+and has no decorative animation or image assets. It does not disable ordinary
+GTK focus/hover transitions or change global settings.
+
+Historical presets retain their original styles, artwork, and playback:
+`svg-flames` uses animated SVG backgrounds inside the button; `fire-ring` uses
+24 fps CSS keyframes and its original wider decorative border. Their original
+sources are saved alongside the current recipe; see `data/presets/README.md`.
+
+### Native dialog behavior
+
 When explanatory text is supplied, the dialog is an `AdwAlertDialog` with a
 heading and two responses:
 
@@ -46,6 +73,8 @@ as a two-button `Restart now` / `Cancel` prompt.
 When text is omitted, the helper uses a compact undecorated GTK window containing
 only the two buttons. `AdwAlertDialog` keeps alert-message spacing even with no
 heading/body, so the custom compact path avoids a blank reserved text area.
+
+### Default tall-ring effect
 
 The current local theme did not give the destructive response the high-contrast
 red button treatment expected for this prompt, so the helper also installs a
@@ -84,8 +113,9 @@ High-contrast mode removes the fire and transparent fringe in favor of a solid
 red button with a white border. Preference changes are applied while the dialog
 is open; no global GTK settings or CSS are written.
 
-The stylesheet and 156 original RGBA frames live in `data/` and are compiled into
-a GResource inside the executable using `glib-compile-resources`. PNG files are
+The stylesheet and 156 original RGBA frames live in `data/presets/tall-ring/`
+and, when selected, are compiled into a GResource inside the executable using
+`glib-compile-resources`. PNG files are
 already compressed and are not compressed again in the resource bundle. The
 installed helper remains a single self-contained binary, with no Blender,
 video decoder, playback process, or on-disk asset directory needed at runtime.

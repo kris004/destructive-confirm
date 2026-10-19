@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="76" viewBox="0 0 320 76">
+  <defs>
+    <linearGradient id="fire" x1="0" y1="1" x2="0" y2="0">
+      <stop stop-color="#ffb52e"/>
+      <stop offset=".42" stop-color="#fb6b19"/>
+      <stop offset="1" stop-color="#e33816" stop-opacity=".55"/>
+    </linearGradient>
+  </defs>
+  <!-- Transparent padding keeps the artwork clear of texture edges. -->
+  <path fill="url(#fire)" d="
+    M0 72 L0 48
+    C8 46 8 34 5 26 C20 32 12 52 26 49
+    C39 45 25 22 39 8 C32 31 57 30 49 51
+    C64 45 57 39 66 31 C63 46 81 44 80 57
+    C95 49 81 27 96 16 C90 37 115 36 109 55
+    C123 50 114 44 124 37 C120 51 138 51 137 61
+    C152 55 144 32 157 23 C151 42 172 42 168 59
+    C182 53 174 43 185 35 C180 51 198 48 198 57
+    C212 46 197 25 214 5 C205 31 233 32 223 50
+    C241 42 230 31 244 21 C237 43 261 43 254 58
+    C271 51 261 37 274 29 C267 48 289 47 282 58
+    C301 52 288 28 304 14 C296 34 320 37 320 48
+    L320 72 Z"/>
+  <g fill="#ff9e32" opacity=".7">
+    <ellipse cx="61" cy="18" rx="1.1" ry="2.8" transform="rotate(23 61 18)"/>
+    <ellipse cx="192" cy="22" rx=".9" ry="2.1" transform="rotate(-19 192 22)"/>
+    <ellipse cx="265" cy="10" rx="1" ry="2.5" transform="rotate(18 265 10)"/>
+  </g>
+</svg>

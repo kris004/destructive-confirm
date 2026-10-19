@@ -1,0 +1,69 @@
+@import url("resource:///io/github/kristopher/DestructiveConfirm/fire-animation.css");
+
+window.destructive-confirm-compact {
+  background: transparent;
+}
+
+.destructive-confirm-card {
+  background: @window_bg_color;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.destructive-confirm-card button {
+  min-width: 260px;
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+/* A transparent border reserves space outside the red button face. Nine-slice
+ * rendering preserves the corners and flame thickness at different sizes. */
+button.destructive-action {
+  border: 16px solid transparent;
+  border-radius: 26px;
+  border-image-source: url("resource:///io/github/kristopher/DestructiveConfirm/fire/036.png");
+  border-image-slice: 52;
+  border-image-width: 26px;
+  border-image-repeat: stretch;
+  background-color: #871525;
+  background-image: linear-gradient(to bottom, #741426, #a6222c);
+  background-origin: padding-box;
+  background-clip: padding-box;
+  color: #ffffff;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+button.destructive-action:hover {
+  background-image: linear-gradient(to bottom, #9c1c30, #c32a30);
+}
+
+button.destructive-action:active {
+  background-image: linear-gradient(to bottom, #5c101d, #8e1d28);
+}
+
+button.destructive-action label {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+/* Never trade a high-contrast preference for decoration. */
+.destructive-confirm-high-contrast button.destructive-action {
+  background: #a51d2d;
+  border: 1px solid #ffffff;
+  border-radius: 10px;
+  border-image-source: none;
+  animation: none;
+}
+
+.destructive-confirm-high-contrast button.destructive-action:hover {
+  background: #c01c28;
+}
+
+.destructive-confirm-high-contrast button.destructive-action:active {
+  background: #821222;
+}
+
+.destructive-confirm-high-contrast button.destructive-action label {
+  text-shadow: none;
+}

@@ -1,5 +1,5 @@
 #include "fire-overlay.h"
-#include "../data/fire-art.h"
+#include "../data/presets/tall-ring/fire-art.h"
 
 #include <math.h>
 

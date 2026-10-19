@@ -1,0 +1,3 @@
+/* Preprocess the same selector as the application, without running target code. */
+#include "../src/animation-config.h"
+DC_SELECTED_PRESET = DC_PRESET_NAME

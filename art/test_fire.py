@@ -13,7 +13,7 @@ from fire_config import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "data"
+DATA = ROOT / "data/presets/tall-ring"
 
 
 def rgba_pixels(image):
@@ -29,6 +29,24 @@ class FireArtworkTests(unittest.TestCase):
         expected += [f"fire/{frame:03d}.png" for frame in range(INTRO + LOOP)]
         self.assertEqual(files, expected)
         self.assertTrue(all((DATA / name).is_file() for name in files))
+
+    def test_original_presets_are_complete(self):
+        small = ROOT / "data/presets/fire-ring"
+        manifest = ET.parse(small / "destructive-confirm.gresource.xml")
+        files = [element.text for element in manifest.iter("file")]
+        self.assertEqual(files, ["style.css", "fire-animation.css"] +
+                         [f"fire/{frame:03d}.png" for frame in range(84)])
+        self.assertEqual(len(list((small / "fire").glob("*.png"))), 84)
+        for frame in range(84):
+            with Image.open(small / f"fire/{frame:03d}.png") as image:
+                self.assertEqual(image.size, (384, 128))
+                self.assertEqual(image.mode, "RGBA")
+                self.assertFalse(image.info)
+                self.assertEqual(image.getpixel((192, 64))[3], 0)
+        svg = ROOT / "data/presets/svg-flames"
+        for name in ("flames.svg", "flames-core.svg"):
+            self.assertEqual(ET.parse(svg / name).getroot().tag,
+                             "{http://www.w3.org/2000/svg}svg")
 
     def test_frame_format_alpha_and_metadata(self):
         paths = sorted((DATA / "fire").glob("*.png"))

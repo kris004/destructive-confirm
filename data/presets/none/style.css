@@ -1,0 +1,51 @@
+window.destructive-confirm-compact {
+  background: transparent;
+}
+
+.destructive-confirm-card {
+  background: @window_bg_color;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.destructive-confirm-card button {
+  min-width: 260px;
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+button.destructive-action {
+  border: 1px solid #d84e32;
+  border-radius: 10px;
+  background-color: #871525;
+  background-image: linear-gradient(to bottom, #741426, #a6222c);
+  color: #ffffff;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+button.destructive-action:hover {
+  background-image: linear-gradient(to bottom, #9c1c30, #c32a30);
+}
+
+button.destructive-action:active {
+  background-image: linear-gradient(to bottom, #5c101d, #8e1d28);
+}
+
+button.destructive-action label {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+.destructive-confirm-high-contrast button.destructive-action {
+  background: #a51d2d;
+  border: 1px solid #ffffff;
+}
+
+.destructive-confirm-high-contrast button.destructive-action:hover {
+  background: #c01c28;
+}
+
+.destructive-confirm-high-contrast button.destructive-action:active {
+  background: #821222;
+}
