@@ -102,3 +102,44 @@ newer overlay geometry.
 
 The editable SVGs and original CSS animation are in
 `data/presets/svg-flames/`; there is no Blender recipe for this preset.
+
+## Fluid-rendered real-fire preset
+
+`art/real-fire/render-fire.py` uses Blender 5.0's Mantaflow gas/fire simulation:
+fuel emitters ignite clockwise, and buoyancy and turbulence produce rising
+flame shapes. The emission is shaded with blackbody colors. No ribbon geometry,
+stock footage, downloaded textures, or external add-ons make the burning fire.
+The small ignition spark and embers remain separate original geometry.
+
+Use a fresh task-owned scratch directory outside Git worktrees. Keep cache and
+raw frames separate from the saved preset:
+
+```sh
+XDG_CACHE_HOME="$scratch/cache" BLENDER_USER_CONFIG="$scratch/config" \
+TMPDIR="$scratch/tmp" OMP_NUM_THREADS=4 \
+blender --background --factory-startup --disable-autoexec --threads 4 \
+  --python-exit-code 1 --python art/real-fire/render-fire.py -- \
+  --output "$scratch/frames" --cache "$scratch/fluid"
+python3 art/real-fire/pack-fire.py "$scratch/frames"
+python3 -B -m unittest discover -s art
+```
+
+The script uses four CPU render threads, a 128-cell shallow domain, 2x noise
+detail, 32 samples, and denoising. `--frames 4,36,90` bakes only far enough for
+those preview frames; a fresh full bake is needed for the complete 180-frame
+bundle. `--resolution` and `--samples` allow draft quality.
+
+The cache must be fresh; an existing bake is never silently overwritten. The
+working directory is moved inside that cache because Mantaflow also writes a
+wavelet-noise tile. Neither caches nor generated `.blend` files belong in Git
+or the installed helper. Remove them after validating the packed assets.
+
+The 30 fps sequence has a 0.55-second spark hold, a 1.3-second ignition sweep,
+and settling until three seconds. It then repeats a three-second burn.
+The final 0.6 seconds blend toward the simulation frames immediately preceding
+the loop, in premultiplied alpha; the last frame joins the next simulation
+frame at the loop start. The packer writes only `data/presets/real-fire/`,
+clears invisible RGB, strips metadata, and generates the playback header and
+manifest. A soft 16-source-pixel outer gutter prevents an occasional high wisp
+from ending in a hard rectangular cut at the domain boundary. Blender and fluid
+caches are not runtime dependencies.

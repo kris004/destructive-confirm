@@ -42,6 +42,7 @@ that header to select one preset, then rebuild:
 | `ANIMATION_TALL_RING` | `tall-ring` (default) | Current tall Blender flames, visible spark, smooth playback |
 | `ANIMATION_FIRE_RING` | `fire-ring` | Original smaller Blender ring and stepped ignition |
 | `ANIMATION_SVG_FLAMES` | `svg-flames` | Original animated SVG flames inside the button |
+| `ANIMATION_REAL_FIRE` | `real-fire` | Fluid-simulated rising flames with a visible ignition spark |
 | `ANIMATION_NONE` | `none` | Plain red destructive button, no decorative animation |
 
 ```sh
@@ -64,7 +65,7 @@ render is required.
 
 The named presets and their sources are preserved in the repository; see
 [`data/presets/README.md`](data/presets/README.md). Optional
-`make check-presets` builds all four selections and verifies their actual
+`make check-presets` builds all five selections and verifies their actual
 embedded resources, incremental switching, and invalid-selection errors
 (requires Python 3, `gresource`, and `nm`). Artwork checks additionally use
 Pillow: `python3 -B -m unittest discover -s art`.

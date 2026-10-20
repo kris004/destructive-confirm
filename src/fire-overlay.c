@@ -1,5 +1,6 @@
 #include "fire-overlay.h"
-#include "../data/presets/tall-ring/fire-art.h"
+#include "animation-config.h"
+#include DC_FIRE_ART_HEADER
 
 #include <math.h>
 

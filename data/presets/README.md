@@ -10,6 +10,7 @@ the dialog's command-line interface.
 | `svg-flames` | `7927349` | `flames.svg` and `flames-core.svg` in this preset |
 | `fire-ring` | `ff90dc7` | `art/fire-ring/render-fire.py` and `art/fire-ring/pack-fire.py` |
 | `tall-ring` | `c135d4f` | `art/render-fire.py`, `art/fire_config.py`, and `art/pack-fire.py` |
+| `real-fire` | Fourth animation | `art/real-fire/render-fire.py`, its `fire_config.py`, and `pack-fire.py` |
 | `none` | Static fallback | This preset's stylesheet; no image files |
 
 All artwork is original procedural artwork, not downloaded stock assets.
@@ -18,12 +19,17 @@ The smaller `fire-ring` retains its original 16-pixel decorative button border
 and 24 fps CSS playback. `svg-flames` paints inside the native button.
 `tall-ring` retains the current normal button geometry, display-rate frame
 blending, and non-interactive overhanging fire layer.
+`real-fire` uses the same native overlay, but its flames come from a buoyant
+Mantaflow gas/fire simulation rather than deformed ribbon meshes. Hot emission,
+turbulent rising plumes, and restrained glow replace the separate curled wisps.
+Its 180 frames contain a three-second ignition/settling sequence and a
+three-second burn loop, with a premultiplied-alpha overlap at the loop seam.
 
 Selection is in the repository root's local `config.h`; `config.def.h` documents
 the default. Ordinary builds use the checked-in assets and require no Blender
 or Python. Each preset's XML manifest is authoritative for the embedded files.
 Do not add other presets' files to a manifest.
 
-Both rendered rings retain their original transparent PNGs and metadata-free
+The rendered presets retain their transparent PNGs and metadata-free
 resource bundles. Their generation recipes are separate because their geometry,
 timing, compositing, and playback differ.

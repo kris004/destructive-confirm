@@ -38,7 +38,7 @@ runtime overhead low while using Adwaita's destructive response semantics.
 
 `config.def.h` is the tracked template. The first build creates local `config.h`
 without overwriting an existing file. `CONFIRM_ANIMATION` selects `tall-ring`
-(default), `fire-ring`, `svg-flames`, or `none` through named C macros. There is
+(default), `fire-ring`, `svg-flames`, `real-fire`, or `none` through named C macros. There is
 no runtime selector and no command-line contract change.
 
 `src/animation-config.h` validates the selection for both the application and
@@ -50,7 +50,7 @@ configuration headers. Invalid/misspelled selections fail the build.
 
 The chosen preset's XML manifest and local assets are the sole resource inputs.
 Other presets stay in the source repository, not in the executable. Only
-`tall-ring` links the fire-overlay player. `none` embeds just its stylesheet
+`tall-ring` and `real-fire` link the shared fire-overlay player. `none` embeds just its stylesheet
 and has no decorative animation or image assets. It does not disable ordinary
 GTK focus/hover transitions or change global settings.
 
@@ -58,6 +58,11 @@ Historical presets retain their original styles, artwork, and playback:
 `svg-flames` uses animated SVG backgrounds inside the button; `fire-ring` uses
 24 fps CSS keyframes and its original wider decorative border. Their original
 sources are saved alongside the current recipe; see `data/presets/README.md`.
+The fourth animation, `real-fire`, replaces ribbon geometry with a baked
+buoyant gas/fire simulation and upward turbulent plumes. It has separate
+artwork, timing metadata, and source recipes; selecting it does not alter the
+saved historical presets or the default. Its packer blends the loop tail in
+premultiplied alpha to join consecutive simulation frames without a hard reset.
 
 ### Native dialog behavior
 

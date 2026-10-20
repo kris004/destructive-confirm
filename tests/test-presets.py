@@ -14,6 +14,7 @@ PRESETS = {
     "tall-ring": "ANIMATION_TALL_RING",
     "svg-flames": "ANIMATION_SVG_FLAMES",
     "fire-ring": "ANIMATION_FIRE_RING",
+    "real-fire": "ANIMATION_REAL_FIRE",
     "none": "ANIMATION_NONE",
 }
 
@@ -47,7 +48,8 @@ class PresetBuildTests(unittest.TestCase):
                 ["gresource", "extract", str(binary), path]), source.read_bytes())
         # Non-overlay presets do not even link the texture player.
         symbols = subprocess.check_output(["nm", str(binary)], text=True)
-        self.assertEqual(" fire_overlay_new\n" in symbols, preset == "tall-ring")
+        self.assertEqual(" fire_overlay_new\n" in symbols,
+                         preset in ("tall-ring", "real-fire"))
 
     def test_selection_resources_and_incremental_switching(self):
         # Never place test builds/configs in the source tree or rely on TMPDIR.

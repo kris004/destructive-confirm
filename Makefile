@@ -16,7 +16,7 @@ endif
 PRESET_DIR := data/presets/$(ANIMATION_PRESET)
 SRC := src/destructive-confirm.c
 HEADERS := src/animation-config.h $(CONFIG_H) $(PRESET_MK)
-ifeq ($(ANIMATION_PRESET),tall-ring)
+ifneq ($(filter tall-ring real-fire,$(ANIMATION_PRESET)),)
 SRC += src/fire-overlay.c
 HEADERS += src/fire-overlay.h $(PRESET_DIR)/fire-art.h
 endif
