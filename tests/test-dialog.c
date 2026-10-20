@@ -27,6 +27,16 @@ is_finished(gpointer data) {
   return ((AppState *)data)->exit_status != 99;
 }
 
+static void
+assert_application_before_realize(GtkApplication *app, GtkWindow *window,
+                                  gpointer user_data) {
+  (void)app;
+  (void)user_data;
+
+  /* Native identification must be correct when the surface is first created. */
+  g_assert_false(gtk_widget_get_realized(GTK_WIDGET(window)));
+}
+
 static AdwApplication *
 test_app(AppState *state) {
   static guint instance = 0;
@@ -36,6 +46,8 @@ test_app(AppState *state) {
   g_autoptr(GError) error = NULL;
   g_application_register(G_APPLICATION(app), NULL, &error);
   g_assert_no_error(error);
+  g_signal_connect(app, "window-added",
+                   G_CALLBACK(assert_application_before_realize), NULL);
   state->app = G_APPLICATION(app);
   state->title = "Dialog behavior test";
   state->confirm_label = "Delete";
@@ -43,6 +55,14 @@ test_app(AppState *state) {
   state->exit_status = 99;
   g_application_hold(state->app);
   return app;
+}
+
+static void
+assert_standalone_window(GtkWindow *window, GtkApplication *app) {
+  g_assert_true(gtk_window_get_application(window) == app);
+  g_assert_null(gtk_window_get_transient_for(window));
+  g_assert_false(gtk_window_get_modal(window));
+  g_assert_false(gtk_window_get_resizable(window));
 }
 
 static void
@@ -57,6 +77,8 @@ test_compact_responses(void) {
     GtkWidget *fire = g_object_get_data(G_OBJECT(window), "fire-layer");
     iterate_until(is_allocated, confirm);
 
+    assert_standalone_window(window, GTK_APPLICATION(app));
+    g_assert_false(gtk_window_get_decorated(window));
     g_assert_true(GTK_IS_BUTTON(confirm));
     g_assert_true(GTK_IS_LABEL(gtk_button_get_child(GTK_BUTTON(confirm))));
     g_assert_cmpstr(gtk_button_get_label(GTK_BUTTON(confirm)), ==, "Delete");
@@ -152,6 +174,7 @@ test_alert_responses(void) {
     g_assert_nonnull(alert);
     GtkWidget *confirm = adw_dialog_get_default_widget(ADW_DIALOG(alert));
     iterate_until(is_allocated, confirm);
+    assert_standalone_window(window, GTK_APPLICATION(app));
     g_assert_true(GTK_IS_BUTTON(confirm));
     g_assert_true(GTK_IS_LABEL(gtk_button_get_child(GTK_BUTTON(confirm))));
     g_assert_cmpstr(adw_alert_dialog_get_default_response(alert), ==, "confirm");

@@ -28,6 +28,8 @@ static void update_effect_preferences(GObject *object, GParamSpec *pspec,
                                       gpointer user_data);
 static void watch_effect_preferences(GtkWidget *widget);
 static gboolean has_text(const char *text);
+static void on_alert_root_changed(GObject *object, GParamSpec *pspec,
+                                  gpointer user_data);
 static void show_alert_dialog(AppState *state);
 static void show_compact_window(AppState *state);
 static void on_response(AdwAlertDialog *dialog, const char *response,
@@ -141,6 +143,18 @@ on_response(AdwAlertDialog *dialog, const char *response, gpointer user_data) {
 }
 
 static void
+on_alert_root_changed(GObject *object, GParamSpec *pspec, gpointer user_data) {
+  GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(object));
+
+  (void)pspec;
+
+  /* Associate the standalone window before GTK realizes its native surface. */
+  if (GTK_IS_WINDOW(root)) {
+    gtk_window_set_application(GTK_WINDOW(root), GTK_APPLICATION(user_data));
+  }
+}
+
+static void
 show_alert_dialog(AppState *state) {
   AdwDialog *dialog = NULL;
   AdwAlertDialog *alert = NULL;
@@ -171,6 +185,8 @@ show_alert_dialog(AppState *state) {
 #endif
   adw_dialog_set_title(dialog, state->title);
   watch_effect_preferences(GTK_WIDGET(dialog));
+  g_signal_connect_object(dialog, "notify::root",
+                          G_CALLBACK(on_alert_root_changed), state->app, 0);
   adw_dialog_present(dialog, NULL);
 #if DC_ANIMATION_OVERLAY
   GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(dialog));
