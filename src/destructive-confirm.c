@@ -8,6 +8,7 @@
 #include "fire-overlay.h"
 #endif
 
+#include <locale.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,6 +33,7 @@ static void update_effect_preferences(GObject *object, GParamSpec *pspec,
                                       gpointer user_data);
 static void watch_effect_preferences(GtkWidget *widget);
 static gboolean has_text(const char *text);
+static char *escape_response_label(const char *label);
 static void on_alert_root_changed(GObject *object, GParamSpec *pspec,
                                   gpointer user_data);
 static gboolean on_alert_window_close(GtkWindow *window, gpointer user_data);
@@ -146,6 +148,20 @@ has_text(const char *text) {
   return TRUE;
 }
 
+static char *
+escape_response_label(const char *label) {
+  GString *escaped = g_string_new(NULL);
+
+  /* Alert response labels parse mnemonics; CLI labels must remain literal. */
+  for (const char *cursor = label; *cursor != '\0'; cursor++) {
+    if (*cursor == '_') {
+      g_string_append_c(escaped, '_');
+    }
+    g_string_append_c(escaped, *cursor);
+  }
+  return g_string_free(escaped, FALSE);
+}
+
 static void
 on_response(AdwAlertDialog *dialog, const char *response, gpointer user_data) {
   AppState *state = user_data;
@@ -199,12 +215,14 @@ static void
 show_alert_dialog(AppState *state) {
   AdwDialog *dialog = NULL;
   AdwAlertDialog *alert = NULL;
+  g_autofree char *cancel_label = escape_response_label(state->cancel_label);
+  g_autofree char *confirm_label = escape_response_label(state->confirm_label);
 
   dialog = adw_alert_dialog_new(state->text, NULL);
   alert = ADW_ALERT_DIALOG(dialog);
 
-  adw_alert_dialog_add_response(alert, "cancel", state->cancel_label);
-  adw_alert_dialog_add_response(alert, "confirm", state->confirm_label);
+  adw_alert_dialog_add_response(alert, "cancel", cancel_label);
+  adw_alert_dialog_add_response(alert, "confirm", confirm_label);
   adw_alert_dialog_set_close_response(alert, "cancel");
   adw_alert_dialog_set_default_response(alert, "confirm");
   adw_alert_dialog_set_response_appearance(alert, "confirm",
@@ -416,6 +434,8 @@ main(int argc, char **argv) {
   char *app_argv[] = {argv[0], NULL};
   int app_argc = 1;
 
+  /* GOption converts strings before GTK initializes the process locale. */
+  setlocale(LC_ALL, "");
   if (!parse_options(&argc, &argv, &state)) {
     app_state_clear(&state);
     return EXIT_USAGE;

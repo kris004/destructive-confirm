@@ -65,5 +65,4 @@ passing CI, safe source extraction, generated Manifests, and strict package QA.
 Routine releases require no manual ebuild bump.
 
 Changes to dependencies, installed paths, services, or animation flags require a
-reviewed overlay-template update. Do not alter the workstation's separate
-localrepo or unattended update providers as part of this public overlay flow.
+reviewed overlay-template update.

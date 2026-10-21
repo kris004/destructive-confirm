@@ -147,9 +147,12 @@ find_alert(GtkWidget *widget) {
 
 static GtkWidget *
 find_button(GtkWidget *widget, const char *label) {
-  if (GTK_IS_BUTTON(widget) &&
-      g_strcmp0(gtk_button_get_label(GTK_BUTTON(widget)), label) == 0) {
-    return widget;
+  if (GTK_IS_BUTTON(widget)) {
+    GtkWidget *child = gtk_button_get_child(GTK_BUTTON(widget));
+    if (GTK_IS_LABEL(child) &&
+        g_strcmp0(gtk_label_get_text(GTK_LABEL(child)), label) == 0) {
+      return widget;
+    }
   }
   for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL;
        child = gtk_widget_get_next_sibling(child)) {
@@ -218,6 +221,47 @@ test_alert_responses(void) {
 }
 
 static void
+test_literal_labels(void) {
+  const char *labels[][2] = {
+      {"Delete_selected_item", "Keep_existing_item"},
+      {"_Delete__", "__Keep_"},
+      {"Supprimer_café_删除", "Garder_déjà_présent"},
+  };
+
+  for (guint layout = 0; layout < 2; layout++) {
+    for (guint item = 0; item < G_N_ELEMENTS(labels); item++) {
+      for (guint action = 0; action < 2; action++) {
+        AppState state = {0};
+        g_autoptr(AdwApplication) app = test_app(&state);
+        g_autofree char *confirm_label = g_strdup(labels[item][0]);
+        g_autofree char *cancel_label = g_strdup(labels[item][1]);
+        state.confirm_label = confirm_label;
+        state.cancel_label = cancel_label;
+        if (layout == 0) {
+          show_compact_window(&state);
+        } else {
+          state.text = "Delete this item?";
+          show_alert_dialog(&state);
+        }
+        g_autoptr(GtkWindow) window = g_object_ref(
+            gtk_application_get_windows(GTK_APPLICATION(app))->data);
+        GtkWidget *confirm = find_button(GTK_WIDGET(window), confirm_label);
+        GtkWidget *cancel = find_button(GTK_WIDGET(window), cancel_label);
+        g_assert_nonnull(confirm);
+        g_assert_nonnull(cancel);
+        iterate_until(is_allocated, confirm);
+        g_signal_emit_by_name(action == 0 ? confirm : cancel, "clicked");
+        iterate_until(is_finished, &state);
+        g_assert_cmpint(state.exit_status, ==, action == 0 ? 0 : 1);
+        if (gtk_widget_get_visible(GTK_WIDGET(window))) {
+          gtk_window_destroy(window);
+        }
+      }
+    }
+  }
+}
+
+static void
 test_motion_preferences(void) {
   AppState state = {0};
   g_autoptr(AdwApplication) app = test_app(&state);
@@ -261,6 +305,7 @@ main(int argc, char **argv) {
   install_css();
   g_test_add_func("/dialog/compact-native-responses", test_compact_responses);
   g_test_add_func("/dialog/alert-native-responses", test_alert_responses);
+  g_test_add_func("/dialog/literal-labels", test_literal_labels);
   g_test_add_func("/dialog/motion-preferences", test_motion_preferences);
   return g_test_run();
 }
