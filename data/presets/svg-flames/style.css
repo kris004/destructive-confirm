@@ -77,7 +77,8 @@ button.destructive-action label {
 
 /* Animate only paint: neither button geometry nor its label ever moves. */
 @keyframes destructive-confirm-fire {
-  0%, 100% {
+  /* GTK 4.14 requires one selector per keyframe block. */
+  0% {
     background-size: 100% 100%, 108% 34px, 112% 48px, 100% 100%;
     background-position: center, 50% calc(100% + 3px), 50% calc(100% + 3px), center;
     box-shadow: 0 0 12px 1px rgba(239, 82, 24, 0.30),
@@ -94,5 +95,11 @@ button.destructive-action label {
     background-position: center, 30% calc(100% + 3px), 70% calc(100% + 3px), center;
     box-shadow: 0 0 14px 1px rgba(255, 87, 24, 0.36),
                 inset 0 1px rgba(255, 209, 132, 0.20);
+  }
+  100% {
+    background-size: 100% 100%, 108% 34px, 112% 48px, 100% 100%;
+    background-position: center, 50% calc(100% + 3px), 50% calc(100% + 3px), center;
+    box-shadow: 0 0 12px 1px rgba(239, 82, 24, 0.30),
+                inset 0 1px rgba(255, 209, 132, 0.18);
   }
 }
