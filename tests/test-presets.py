@@ -86,6 +86,23 @@ class PresetBuildTests(unittest.TestCase):
         self.run_make(scratch, config, "uninstall", *options)
         self.assertFalse(docs.exists())
 
+    def test_clean_without_build_dependencies(self):
+        with tempfile.TemporaryDirectory(prefix="destructive-confirm-clean.",
+                                         dir="/tmp") as directory:
+            scratch = Path(directory)
+            disposable = scratch / "output with spaces"
+            disposable.mkdir()
+            (disposable / "generated").write_text("temporary build output\n")
+            sibling = scratch / "output"
+            sibling.mkdir()
+            (sibling / "keep").write_text("unrelated sibling\n")
+            config = scratch / "missing.h"
+            self.run_make(scratch, config, "clean",
+                          f"BUILD_DIR={disposable}", "CC=false", "PKG_CONFIG=false")
+            self.assertFalse(disposable.exists())
+            self.assertEqual((sibling / "keep").read_text(), "unrelated sibling\n")
+            self.assertFalse(config.exists())
+
     def test_install_directory_overrides(self):
         with tempfile.TemporaryDirectory(prefix="destructive-confirm-install.",
                                          dir="/tmp") as directory:
