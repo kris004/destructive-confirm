@@ -3,20 +3,24 @@ APP := destructive-confirm
 COMPAT_APP := power-confirm
 BUILD_DIR := build
 CONFIG_H ?= config.h
+PYTHON ?= python3
+APP_VERSION = $(shell cat VERSION)
+RELEASE_REF ?= HEAD
+OUTPUT_DIR ?=
 PRESET_MK := $(BUILD_DIR)/preset.mk
-CONFIG_CPPFLAGS = -DDC_CONFIG_HEADER='"$(abspath $(CONFIG_H))"'
+CONFIG_CPPFLAGS = -DDC_CONFIG_HEADER='"$(abspath $(CONFIG_H))"' -DDC_VERSION='"$(APP_VERSION)"'
 .DEFAULT_GOAL := all
 
 # An included makefile lets resource dependencies follow the C header selection.
 # Recheck each invocation, but replace it only on a real selection change.
 # This also handles switching to an older CONFIG_H in the same BUILD_DIR.
-ifneq ($(filter-out clean uninstall,$(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)),)
+ifneq ($(filter-out clean uninstall dist check-release,$(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)),)
 include $(PRESET_MK)
 endif
 
 PRESET_DIR := data/presets/$(ANIMATION_PRESET)
 SRC := src/destructive-confirm.c
-HEADERS := src/animation-config.h $(CONFIG_H) $(PRESET_MK)
+HEADERS := src/animation-config.h $(CONFIG_H) $(PRESET_MK) VERSION
 ifneq ($(filter tall-ring real-fire,$(ANIMATION_PRESET)),)
 SRC += src/fire-overlay.c
 HEADERS += src/fire-overlay.h $(PRESET_DIR)/fire-art.h
@@ -44,7 +48,7 @@ PKG_LIBS = $(shell $(PKG_CONFIG) --libs $(PKGS))
 CFLAGS ?= -O2 -g
 LDLIBS += -lm
 
-.PHONY: all check-deps check check-presets smoke-gui preview-tool install uninstall clean FORCE
+.PHONY: all check-deps check check-presets check-release dist smoke-gui preview-tool install uninstall clean FORCE
 
 all: $(BUILD_DIR)/$(APP)
 
@@ -87,6 +91,7 @@ preview-tool: $(BUILD_DIR)/capture-preview
 
 check: $(BUILD_DIR)/$(APP)
 	$(BUILD_DIR)/$(APP) --help >/dev/null
+	$(BUILD_DIR)/$(APP) --version | grep -Fx 'destructive-confirm $(APP_VERSION)'
 	@for arg in --does-not-exist --title --text --confirm-label --cancel-label unexpected; do \
 		$(TIMEOUT) 5 $(BUILD_DIR)/$(APP) "$$arg" >/dev/null 2>&1; \
 		status=$$?; test $$status -eq 2 || { \
@@ -94,7 +99,14 @@ check: $(BUILD_DIR)/$(APP)
 	done
 
 check-presets:
-	python3 -B tests/test-presets.py
+	$(PYTHON) -B tests/test-presets.py
+
+check-release:
+	$(PYTHON) -B -m unittest discover -s tests -p 'test_release.py' -v
+
+dist:
+	@test -n "$(OUTPUT_DIR)" || { echo "Set OUTPUT_DIR to an external artifact directory" >&2; exit 2; }
+	$(PYTHON) -B tools/package-release.py --ref "$(RELEASE_REF)" --output-dir "$(OUTPUT_DIR)"
 
 smoke-gui: $(BUILD_DIR)/$(APP) $(BUILD_DIR)/test-dialog
 	G_DEBUG=fatal-warnings $(BUILD_DIR)/test-dialog

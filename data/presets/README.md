@@ -7,9 +7,9 @@ the dialog's command-line interface.
 
 | Preset | Saved version | Editable artwork source |
 | --- | --- | --- |
-| `svg-flames` | `7927349` | `flames.svg` and `flames-core.svg` in this preset |
-| `fire-ring` | `ff90dc7` | `art/fire-ring/render-fire.py` and `art/fire-ring/pack-fire.py` |
-| `tall-ring` | `c135d4f` | `art/render-fire.py`, `art/fire_config.py`, and `art/pack-fire.py` |
+| `svg-flames` | `14363d6` | `flames.svg` and `flames-core.svg` in this preset |
+| `fire-ring` | `65faf22` | `art/fire-ring/render-fire.py` and `art/fire-ring/pack-fire.py` |
+| `tall-ring` | `70043c5` | `art/render-fire.py`, `art/fire_config.py`, and `art/pack-fire.py` |
 | `real-fire` | Fourth animation | `art/real-fire/render-fire.py`, its `fire_config.py`, and `pack-fire.py` |
 | `none` | Static fallback | This preset's stylesheet; no image files |
 

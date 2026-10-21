@@ -19,6 +19,9 @@ typedef struct {
   char *text;
   char *confirm_label;
   char *cancel_label;
+  gboolean show_version;
+  gboolean finished;
+  guint alert_close_idle;
   int exit_status;
   GApplication *app;
 } AppState;
@@ -31,6 +34,8 @@ static void watch_effect_preferences(GtkWidget *widget);
 static gboolean has_text(const char *text);
 static void on_alert_root_changed(GObject *object, GParamSpec *pspec,
                                   gpointer user_data);
+static gboolean on_alert_window_close(GtkWindow *window, gpointer user_data);
+static gboolean finish_alert_close(gpointer user_data);
 static void show_alert_dialog(AppState *state);
 static void show_compact_window(AppState *state);
 static void on_response(AdwAlertDialog *dialog, const char *response,
@@ -47,6 +52,14 @@ static void app_state_clear(AppState *state);
 
 static void
 finish(AppState *state, int exit_status) {
+  if (state->finished) {
+    return;
+  }
+  state->finished = TRUE;
+  if (state->alert_close_idle != 0) {
+    g_source_remove(state->alert_close_idle);
+    state->alert_close_idle = 0;
+  }
   state->exit_status = exit_status;
   g_application_release(state->app);
   g_application_quit(state->app);
@@ -146,13 +159,40 @@ on_response(AdwAlertDialog *dialog, const char *response, gpointer user_data) {
 static void
 on_alert_root_changed(GObject *object, GParamSpec *pspec, gpointer user_data) {
   GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(object));
+  AppState *state = user_data;
 
   (void)pspec;
 
   /* Associate the standalone window before GTK realizes its native surface. */
   if (GTK_IS_WINDOW(root)) {
-    gtk_window_set_application(GTK_WINDOW(root), GTK_APPLICATION(user_data));
+    gtk_window_set_application(GTK_WINDOW(root), GTK_APPLICATION(state->app));
+    g_signal_connect(root, "close-request",
+                     G_CALLBACK(on_alert_window_close), state);
   }
+}
+
+static gboolean
+finish_alert_close(gpointer user_data) {
+  AppState *state = user_data;
+
+  state->alert_close_idle = 0;
+  finish(state, EXIT_FAILURE);
+  return G_SOURCE_REMOVE;
+}
+
+static gboolean
+on_alert_window_close(GtkWindow *window, gpointer user_data) {
+  AppState *state = user_data;
+
+  (void)window;
+  /* libadwaita 1.5 omits the closed/response signal for standalone windows.
+   * Defer cancellation: a native response button closes the window before
+   * emitting its response, and that response must win over this fallback.
+   */
+  if (!state->finished && state->alert_close_idle == 0) {
+    state->alert_close_idle = g_idle_add(finish_alert_close, state);
+  }
+  return GDK_EVENT_PROPAGATE;
 }
 
 static void
@@ -186,8 +226,8 @@ show_alert_dialog(AppState *state) {
 #endif
   adw_dialog_set_title(dialog, state->title);
   watch_effect_preferences(GTK_WIDGET(dialog));
-  g_signal_connect_object(dialog, "notify::root",
-                          G_CALLBACK(on_alert_root_changed), state->app, 0);
+  g_signal_connect(dialog, "notify::root",
+                   G_CALLBACK(on_alert_root_changed), state);
   adw_dialog_present(dialog, NULL);
 #if DC_ANIMATION_OVERLAY
   GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(dialog));
@@ -327,6 +367,8 @@ parse_options(int *argc, char ***argv, AppState *state) {
        "Confirm button label", "LABEL"},
       {"cancel-label", 0, 0, G_OPTION_ARG_STRING, &state->cancel_label,
        "Cancel button label", "LABEL"},
+      {"version", 0, 0, G_OPTION_ARG_NONE, &state->show_version,
+       "Print version without opening a dialog", NULL},
       {NULL}};
 
   context = g_option_context_new("- show a destructive confirmation dialog");
@@ -357,6 +399,10 @@ parse_options(int *argc, char ***argv, AppState *state) {
 
 static void
 app_state_clear(AppState *state) {
+  if (state->alert_close_idle != 0) {
+    g_source_remove(state->alert_close_idle);
+    state->alert_close_idle = 0;
+  }
   g_free(state->title);
   g_free(state->text);
   g_free(state->confirm_label);
@@ -373,6 +419,12 @@ main(int argc, char **argv) {
   if (!parse_options(&argc, &argv, &state)) {
     app_state_clear(&state);
     return EXIT_USAGE;
+  }
+
+  if (state.show_version) {
+    g_print("destructive-confirm %s\n", DC_VERSION);
+    app_state_clear(&state);
+    return EXIT_SUCCESS;
   }
 
   app = adw_application_new(APP_ID, G_APPLICATION_NON_UNIQUE);

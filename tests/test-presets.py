@@ -10,6 +10,9 @@ import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
+TEST_TMP_ROOT = Path(os.environ.get("DC_TEST_TMPDIR", "/tmp")).resolve()
+if not TEST_TMP_ROOT.is_dir() or TEST_TMP_ROOT == ROOT or ROOT in TEST_TMP_ROOT.parents:
+    raise RuntimeError("DC_TEST_TMPDIR must be an existing directory outside the source tree")
 PREFIX = "/io/github/kristopher/DestructiveConfirm/"
 PRESETS = {
     "tall-ring": "ANIMATION_TALL_RING",
@@ -88,7 +91,7 @@ class PresetBuildTests(unittest.TestCase):
 
     def test_clean_without_build_dependencies(self):
         with tempfile.TemporaryDirectory(prefix="destructive-confirm-clean.",
-                                         dir="/tmp") as directory:
+                                         dir=TEST_TMP_ROOT) as directory:
             scratch = Path(directory)
             disposable = scratch / "output with spaces"
             disposable.mkdir()
@@ -105,7 +108,7 @@ class PresetBuildTests(unittest.TestCase):
 
     def test_install_directory_overrides(self):
         with tempfile.TemporaryDirectory(prefix="destructive-confirm-install.",
-                                         dir="/tmp") as directory:
+                                         dir=TEST_TMP_ROOT) as directory:
             scratch = Path(directory)
             config = scratch / "config.h"
             config.write_text("#define CONFIRM_ANIMATION ANIMATION_NONE\n")
@@ -128,9 +131,9 @@ class PresetBuildTests(unittest.TestCase):
             self.assertFalse((stage / "opt/custom docs").exists())
 
     def test_selection_resources_and_incremental_switching(self):
-        # Never place test builds/configs in the source tree or rely on TMPDIR.
+        # The explicit override supports Portage's sandbox-owned ${T}.
         with tempfile.TemporaryDirectory(prefix="destructive-confirm-presets.",
-                                         dir="/tmp") as directory:
+                                         dir=TEST_TMP_ROOT) as directory:
             scratch = Path(directory)
             config = scratch / "config.h"
             sizes = {}
