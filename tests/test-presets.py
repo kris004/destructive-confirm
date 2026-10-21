@@ -130,6 +130,46 @@ class PresetBuildTests(unittest.TestCase):
             self.assertFalse((stage / "opt/custom bin/power-confirm").is_symlink())
             self.assertFalse((stage / "opt/custom docs").exists())
 
+    def test_build_and_config_paths_with_spaces(self):
+        with tempfile.TemporaryDirectory(prefix="destructive-confirm-spaces.",
+                                         dir=TEST_TMP_ROOT) as directory:
+            scratch = Path(directory)
+            build = scratch / "output with spaces"
+            config = scratch / "custom config.h"
+            config.write_text("#define CONFIRM_ANIMATION ANIMATION_NONE\n")
+            options = (f"BUILD_DIR={build}",)
+            self.run_make(scratch, config, *options, "check", "preview-tool",
+                          str(build / "test-dialog"))
+            binary = build / "destructive-confirm"
+            self.assert_resources(binary, "none")
+
+            stage = scratch / "staged output"
+            install_options = (*options, f"DESTDIR={stage}", "PREFIX=/usr")
+            self.run_make(scratch, config, *install_options, "install")
+            self.assertEqual(
+                (stage / "usr/bin/destructive-confirm").read_bytes(),
+                binary.read_bytes())
+            self.assertEqual(os.readlink(stage / "usr/bin/power-confirm"),
+                             "destructive-confirm")
+
+            # Relative configuration paths must also preserve embedded spaces.
+            config.write_text("#define CONFIRM_ANIMATION ANIMATION_SVG_FLAMES\n")
+            relative = Path(os.path.relpath(config, ROOT))
+            self.run_make(scratch, relative, *options, "check")
+            self.assert_resources(binary, "svg-flames")
+            unchanged = binary.stat().st_mtime_ns
+            self.run_make(scratch, relative, *options, "all")
+            self.assertEqual(binary.stat().st_mtime_ns, unchanged)
+
+            self.run_make(scratch, config, *options, "clean")
+            self.assertFalse(build.exists())
+            self.assertTrue(config.is_file())
+            self.run_make(scratch, config, *install_options, "uninstall",
+                          "CC=false", "PKG_CONFIG=false")
+            self.assertFalse((stage / "usr/bin/destructive-confirm").exists())
+            self.assertFalse((stage / "usr/bin/power-confirm").is_symlink())
+            self.assertFalse((stage / "usr/share/doc/destructive-confirm").exists())
+
     def test_selection_resources_and_incremental_switching(self):
         # The explicit override supports Portage's sandbox-owned ${T}.
         with tempfile.TemporaryDirectory(prefix="destructive-confirm-presets.",

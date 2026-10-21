@@ -115,7 +115,9 @@ destructive-confirm [--title TITLE] [--text TEXT] \
 | `-h`, `--help` | Print help without opening a dialog | |
 | `--version` | Print the version without opening a dialog | |
 
-Quote all text arguments. For a compact prompt, omit `--text`:
+Quote all text arguments. Button labels are literal text: underscores are shown
+unchanged, not interpreted as keyboard mnemonics. For a compact prompt, omit
+`--text`:
 
 ```sh
 destructive-confirm --title "Replace item" \
@@ -166,6 +168,8 @@ with `config.def.h` after updating the source. Packagers/tests can use an
 alternate header with `make CONFIG_H=/path/to/config.h`, and an external build
 directory with `make BUILD_DIR=/path/to/build`. Selection changes rebuild the
 resource bundle automatically; neither cleaning nor rendering is required.
+Paths containing spaces are supported; quote the complete Make assignment,
+for example `make "BUILD_DIR=/path/to/build output" "CONFIG_H=/path/to/custom config.h"`.
 
 See the [preset catalogue](data/presets/README.md) and
 [Blender recipes](art/README.md) for the saved artwork and editable sources.
