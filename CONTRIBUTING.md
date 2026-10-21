@@ -15,11 +15,12 @@ needs Python 3 with Pillow, GNU `timeout`, GLib's `gresource`, and binutils `nm`
 make check
 make smoke-gui
 make check-presets
+make check-release
 python3 -B -m unittest discover -s art
 git diff --check
 ```
 
-`make check` verifies help and invalid arguments without needing a display.
+`make check` verifies help, version output, and invalid arguments without a display.
 `make smoke-gui` tests native responses, keyboard activation, motion preferences,
 and both dialog layouts. Its two six-second timeouts are expected successes.
 Do not interact with those dialogs while the test runs.
@@ -41,6 +42,10 @@ also check real keyboard/focus and accessibility behavior on a normal desktop.
 compares every embedded resource with its manifest, tests incremental switching,
 rejects invalid selectors, and checks staged installation/removal. It does not
 change your local `config.h` or installed binary.
+`DC_TEST_TMPDIR` can select an existing directory outside the source tree;
+Portage uses its sandbox-owned `${T}`. `PYTHON` selects the test interpreter.
+`make check-release` exercises deterministic source packaging and fail-closed
+tag/signature/CI validation using offline fixtures, never real keys or tags.
 
 ## Compatibility boundaries
 

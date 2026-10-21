@@ -140,6 +140,14 @@ The application uses `G_APPLICATION_NON_UNIQUE` because it is a command-line
 prompt helper. Each invocation must use its own arguments instead of activating
 an older still-running prompt with the same application ID.
 
+Standalone alert windows also observe the native `close-request` signal.
+libadwaita 1.5 does not emit the alert's close response in that path, so an idle
+fallback cancels if no native response arrives. The fallback is removed when
+a response finishes the prompt: confirm buttons close before emitting their
+response, and must not be mistaken for cancellation. Completion is idempotent.
+This preserves native controls and makes Escape/window-close exit non-zero
+on both the minimum and current libadwaita versions.
+
 ## Installation
 
 The project builds a single binary at `build/destructive-confirm` and installs

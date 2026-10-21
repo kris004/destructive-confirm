@@ -1,5 +1,7 @@
 # destructive-confirm
 
+[![CI](https://github.com/kris004/destructive-confirm/actions/workflows/ci.yml/badge.svg)](https://github.com/kris004/destructive-confirm/actions/workflows/ci.yml)
+
 **A small native confirmation dialog, with an optionally flaming confirm button.**
 
 Use it from shell scripts before deletion, replacement, restart, or another
@@ -52,15 +54,18 @@ For example, on Ubuntu 24.04:
 sudo apt install build-essential pkg-config libgtk-4-dev libadwaita-1-dev libglib2.0-dev-bin
 ```
 
-From the source directory:
+Get the source and build:
 
 ```sh
+git clone https://github.com/kris004/destructive-confirm.git
+cd destructive-confirm
 make
 ./build/destructive-confirm --help
+./build/destructive-confirm --version
 ```
 
 Running a dialog requires a graphical session and a display backend supported
-by your GTK build (Wayland or X11). `--help` and argument validation work without
+by your GTK build (Wayland or X11). `--help`, `--version`, and argument validation work without
 a display. Blender and Python are **not** needed to build or run the application.
 
 By default the destructive button catches fire: a visible spark ignites, flame
@@ -89,6 +94,11 @@ make PREFIX=/usr DESTDIR="$pkgdir" install
 run `make uninstall` with the **same path overrides** used for installation.
 It leaves your source checkout, local configuration, and unrelated files alone.
 
+Gentoo users can install from the
+[kris004 overlay](https://github.com/kris004/gentoo-overlay).
+See [Gentoo packaging](docs/gentoo.md) for the animation USE flags and automated
+signed-release update contract. Releases contain source, not prebuilt binaries.
+
 ## Usage
 
 ```sh
@@ -103,6 +113,7 @@ destructive-confirm [--title TITLE] [--text TEXT] \
 | `--confirm-label LABEL` | Destructive response label | `OK` |
 | `--cancel-label LABEL` | Cancel response label | `Cancel` |
 | `-h`, `--help` | Print help without opening a dialog | |
+| `--version` | Print the version without opening a dialog | |
 
 Quote all text arguments. For a compact prompt, omit `--text`:
 
@@ -115,14 +126,14 @@ destructive-confirm --title "Replace item" \
 
 | Status | Meaning |
 | --- | --- |
-| `0` | Confirmed, or help was requested |
+| `0` | Confirmed, or help/version information was requested |
 | `1` | Cancelled, closed, Escape, or application failure |
 | `2` | Invalid command-line arguments |
 | Other non-zero | Startup failure, signal, or external timeout; do not proceed |
 
 Normal prompts produce no result text on stdout. Diagnostics go to stderr.
-Do not let untrusted input add options such as `--help` to a confirmation call:
-help intentionally returns success without asking a question.
+Do not let untrusted input add options such as `--help` or `--version` to a
+confirmation call: informational options return success without asking.
 
 ## Choose an animation
 
@@ -179,6 +190,7 @@ See the [preset catalogue](data/presets/README.md) and
 make check
 make smoke-gui
 make check-presets
+make check-release
 python3 -B -m unittest discover -s art
 ```
 

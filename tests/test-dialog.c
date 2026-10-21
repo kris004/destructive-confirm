@@ -145,9 +145,25 @@ find_alert(GtkWidget *widget) {
   return NULL;
 }
 
+static GtkWidget *
+find_button(GtkWidget *widget, const char *label) {
+  if (GTK_IS_BUTTON(widget) &&
+      g_strcmp0(gtk_button_get_label(GTK_BUTTON(widget)), label) == 0) {
+    return widget;
+  }
+  for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL;
+       child = gtk_widget_get_next_sibling(child)) {
+    GtkWidget *button = find_button(child, label);
+    if (button != NULL) {
+      return button;
+    }
+  }
+  return NULL;
+}
+
 static void
 test_alert_responses(void) {
-  for (guint action = 0; action < 2; action++) {
+  for (guint action = 0; action < 4; action++) {
     AppState state = {0};
     g_autoptr(AdwApplication) app = test_app(&state);
     g_autofree char *title = g_strdup_printf("Alert response %u", action);
@@ -184,8 +200,14 @@ test_alert_responses(void) {
     g_test_message("Alert response %u", action);
     if (action == 0) {
       g_signal_emit_by_name(confirm, "clicked");
-    } else {
+    } else if (action == 1) {
+      GtkWidget *cancel = find_button(GTK_WIDGET(alert), "Cancel");
+      g_assert_nonnull(cancel);
+      g_signal_emit_by_name(cancel, "clicked");
+    } else if (action == 2) {
       g_assert_true(adw_dialog_close(ADW_DIALOG(alert))); /* Escape action. */
+    } else {
+      gtk_window_close(window); /* Native window-manager close action. */
     }
     iterate_until(is_finished, &state);
     g_assert_cmpint(state.exit_status, ==, action == 0 ? 0 : 1);

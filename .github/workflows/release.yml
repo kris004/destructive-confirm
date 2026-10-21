@@ -1,0 +1,141 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build source release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Allocate external staging
+        run: |
+          scratch=$(mktemp -d "$RUNNER_TEMP/destructive-confirm-release.XXXXXXXX")
+          echo "DC_RELEASE_SCRATCH=$scratch" >> "$GITHUB_ENV"
+          cp config.def.h "$scratch/config.h"
+
+      - name: Install source validation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential pkg-config libgtk-4-dev libadwaita-1-dev \
+            libglib2.0-dev-bin python3-pil binutils gnupg
+
+      - name: Verify signed tag, exact commit, version, and upstream CI
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -B tools/verify-release.py \
+            --repository "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME" \
+            --temporary-dir "$DC_RELEASE_SCRATCH"
+
+      - name: Build, test, and package once
+        run: |
+          make BUILD_DIR="$DC_RELEASE_SCRATCH/build" \
+            CONFIG_H="$DC_RELEASE_SCRATCH/config.h" check check-presets check-release
+          python3 -B -m unittest discover -s art -v
+          make OUTPUT_DIR="$DC_RELEASE_SCRATCH/dist" dist
+          (cd "$DC_RELEASE_SCRATCH/dist" && sha256sum --check SHA256SUMS)
+          version=$(cat VERSION)
+          mkdir "$DC_RELEASE_SCRATCH/extracted"
+          tar -xzf "$DC_RELEASE_SCRATCH/dist/destructive-confirm-${version}-src.tar.gz" \
+            -C "$DC_RELEASE_SCRATCH/extracted"
+          make -C "$DC_RELEASE_SCRATCH/extracted/destructive-confirm-${version}" \
+            BUILD_DIR="$DC_RELEASE_SCRATCH/archive-build" \
+            CONFIG_H="$DC_RELEASE_SCRATCH/archive.h" check
+          test "$("$DC_RELEASE_SCRATCH/archive-build/destructive-confirm" --version)" \
+            = "destructive-confirm $version"
+
+      - name: Upload the tested source artifacts
+        id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: source-release
+          path: |
+            ${{ env.DC_RELEASE_SCRATCH }}/dist/*.tar.gz
+            ${{ env.DC_RELEASE_SCRATCH }}/dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Remove external staging
+        if: always() && env.DC_RELEASE_SCRATCH != ''
+        run: |
+          case "$DC_RELEASE_SCRATCH" in
+            "$RUNNER_TEMP"/destructive-confirm-release.*) ;;
+            *) exit 1 ;;
+          esac
+          test -d "$DC_RELEASE_SCRATCH" && test ! -L "$DC_RELEASE_SCRATCH" \
+            && test -O "$DC_RELEASE_SCRATCH"
+          make BUILD_DIR="$DC_RELEASE_SCRATCH/build" clean
+          make BUILD_DIR="$DC_RELEASE_SCRATCH/archive-build" clean
+          rm -r -- "$DC_RELEASE_SCRATCH"
+
+  attest:
+    name: Attest source provenance
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: ${{ runner.temp }}/source-release
+      - run: cd "$RUNNER_TEMP/source-release" && sha256sum --check SHA256SUMS
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            ${{ runner.temp }}/source-release/*.tar.gz
+            ${{ runner.temp }}/source-release/SHA256SUMS
+
+  draft:
+    name: Stage attested release draft
+    if: github.ref_type == 'tag'
+    needs: [build, attest]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: ${{ runner.temp }}/source-release
+      - name: Verify and stage the same bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$RUNNER_TEMP/source-release"
+          sha256sum --check SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" ./*.tar.gz SHA256SUMS \
+            --draft --generate-notes --verify-tag \
+            --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME"
+          # GITHUB_TOKEN cannot read the administration-only immutability
+          # setting. Never publish without that preflight: the maintainer
+          # verifies the draft and publishes with their authenticated CLI.
+          echo "Attested draft ready; follow docs/publishing.md to publish."

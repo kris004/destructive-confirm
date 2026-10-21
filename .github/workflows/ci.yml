@@ -3,6 +3,7 @@ name: CI
 
 on:
   push:
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
@@ -49,11 +50,12 @@ jobs:
       - name: Check CLI, resources, and staged installation
         run: |
           make BUILD_DIR="$DC_CI_SCRATCH/build" CONFIG_H="$DC_CI_SCRATCH/config.h" \
-            check check-presets
+            check check-presets check-release
           python3 -B -m unittest discover -s art -v
 
       - name: Exercise every preset's native dialogs
         run: |
+          ulimit -c 0
           for macro in ANIMATION_TALL_RING ANIMATION_REAL_FIRE \
                        ANIMATION_FIRE_RING ANIMATION_SVG_FLAMES ANIMATION_NONE
           do
