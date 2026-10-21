@@ -42,23 +42,30 @@ GTK/libadwaita and the selected artwork are built on the destination system.
 1. Review and merge version/release preparation through a pull request.
 2. Require CI on the exact reviewed default-branch commit and protect version
    tags against update/deletion.
-3. Authorize the release with a hardware-backed OpenPGP signature on an
-   annotated tag. Verify the signature and direct commit target locally;
-   never substitute a lightweight or unsigned tag if signing is unavailable.
-4. Run the non-publishing manual `Release` workflow on that commit. It builds,
+3. Run the non-publishing manual `Release` workflow on that commit. It builds,
    tests, archives the exact Git tree, rebuilds the extracted archive, uploads
    checksums, and attests the artifact. It does not create a GitHub Release.
+4. Authorize the release with a hardware-backed OpenPGP signature on an
+   annotated tag. Verify the signature and direct commit target locally;
+   never substitute a lightweight or unsigned tag if signing is unavailable.
 5. Enable and verify repository immutable releases **before pushing the tag**.
    Push only the already-verified tag. The release workflow independently
    verifies GitHub's tag signature status, direct target, committed VERSION,
    default-branch reachability, required CI, and the pinned full signer
    fingerprint using GnuPG with the signer's public key.
-6. Verify the public source, downloads, checksums, attestations, and immutability.
+6. Verify the attested draft, preflight immutability with the maintainer's CLI,
+   and publish as described below.
+7. Verify the public source, downloads, checksums, attestations, and immutability.
    Never recreate a published tag or rebuild under an existing version.
 
 The workflow uploads and attests the tested source archive and `SHA256SUMS`.
-Publication downloads those **same artifacts**, assembles a draft with every
-asset, then publishes it as immutable. It never rebuilds in the publishing job.
+The tagged workflow downloads those **same artifacts** and assembles a draft
+with every asset. It never rebuilds in the draft job or publishes automatically.
+GitHub's immutability-settings API requires Administration read permission,
+which `GITHUB_TOKEN` cannot request. Final publication therefore uses the
+maintainer's existing authenticated CLI, not a privileged CI secret. A disabled
+or unreadable setting must stop publication, not expose a mutable release and
+only discover the problem afterward.
 Signing-key rotation requires a reviewed change to both `tools/verify-release.py`
 and the Gentoo overlay's trusted-fingerprint registry.
 
@@ -97,6 +104,25 @@ Download the published source archive and `SHA256SUMS` together, verify the
 checksums, and use `gh attestation verify ARCHIVE --repo kris004/destructive-confirm`.
 Source includes license notices and editable artwork recipes. Remove local
 scratch after preserving any needed result; Git history is the source of truth.
+
+After the tagged workflow succeeds, download the draft's two assets into a
+fresh external directory. Verify `SHA256SUMS`, the archive layout, API asset
+digests, and provenance for **both** files using `gh attestation verify` with
+`--repo kris004/destructive-confirm`, `--source-digest "$commit"`,
+`--source-ref "refs/tags/v$version"`, and
+`--signer-workflow kris004/destructive-confirm/.github/workflows/release.yml`.
+Do not upload replacements or rebuild. Then publish with the maintainer's
+authenticated CLI, checking the live setting immediately before publication:
+
+```sh
+repo=kris004/destructive-confirm
+test "$(gh api "repos/$repo/immutable-releases" --jq .enabled)" = true &&
+  gh release edit "v$version" --draft=false --latest --repo "$repo" &&
+  test "$(gh api "repos/$repo/releases/tags/v$version" --jq .immutable)" = true
+```
+
+An API/authentication failure or disabled setting leaves the draft unpublished.
+Check the release state before retrying after an uncertain publication result.
 
 If a tagged run fails, preserve the tag and recover the exact original tested
 artifact. Do not rerun a build under that version, use `--clobber`, or delete

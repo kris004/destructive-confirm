@@ -113,8 +113,8 @@ jobs:
             ${{ runner.temp }}/source-release/*.tar.gz
             ${{ runner.temp }}/source-release/SHA256SUMS
 
-  publish:
-    name: Publish immutable release
+  draft:
+    name: Stage attested release draft
     if: github.ref_type == 'tag'
     needs: [build, attest]
     runs-on: ubuntu-24.04
@@ -126,7 +126,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.build.outputs.artifact-id }}
           path: ${{ runner.temp }}/source-release
-      - name: Verify and publish the same bytes
+      - name: Verify and stage the same bytes
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -135,7 +135,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" ./*.tar.gz SHA256SUMS \
             --draft --generate-notes --verify-tag \
             --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME"
-          gh release edit "$GITHUB_REF_NAME" --draft=false --latest \
-            --repo "$GITHUB_REPOSITORY"
-          test "$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" \
-            --jq .immutable)" = true
+          # GITHUB_TOKEN cannot read the administration-only immutability
+          # setting. Never publish without that preflight: the maintainer
+          # verifies the draft and publishes with their authenticated CLI.
+          echo "Attested draft ready; follow docs/publishing.md to publish."
