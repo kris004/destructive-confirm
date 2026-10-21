@@ -99,10 +99,7 @@ preview-tool: $(call make_path,$(BUILD_DIR)/capture-preview)
 check: $(call make_path,$(BUILD_DIR)/$(APP))
 	"$(BUILD_DIR)/$(APP)" --help >/dev/null
 	"$(BUILD_DIR)/$(APP)" --version | grep -Fx 'destructive-confirm $(APP_VERSION)'
-	@for arg in --title --text --confirm-label --cancel-label; do \
-		LC_ALL=C.UTF-8 "$(BUILD_DIR)/$(APP)" "$$arg" 'café_删除' --version \
-			| grep -Fqx 'destructive-confirm $(APP_VERSION)' || exit 1; \
-	done
+	@$(SHELL) tests/check-unicode.sh "$(BUILD_DIR)/$(APP)" "$(APP_VERSION)"
 	@for arg in --does-not-exist --title --text --confirm-label --cancel-label unexpected; do \
 		$(TIMEOUT) 5 "$(BUILD_DIR)/$(APP)" "$$arg" >/dev/null 2>&1; \
 		status=$$?; test $$status -eq 2 || { \

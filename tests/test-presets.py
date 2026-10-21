@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Build every header-selected preset and inspect the actual embedded bundle."""
+"""Check portable CLI tests and every header-selected preset's embedded bundle."""
 
 import os
 from pathlib import Path
@@ -21,6 +21,106 @@ PRESETS = {
     "real-fire": "ANIMATION_REAL_FIRE",
     "none": "ANIMATION_NONE",
 }
+
+
+class UnicodeLocaleTests(unittest.TestCase):
+    def run_check(self, *, caller="C", available="C\nPOSIX\nen_US.UTF-8",
+                  utf8="en_US.UTF-8", charmap="UTF-8", status=0,
+                  version="0.1.1", enumerate_status=0, ctype="", lang="C"):
+        with tempfile.TemporaryDirectory(prefix="destructive-confirm-locale.",
+                                         dir=TEST_TMP_ROOT) as directory:
+            scratch = Path(directory)
+            commands = scratch / "commands"
+            commands.mkdir()
+            locale = commands / "locale"
+            locale.write_text("""#!/bin/sh
+case $1 in
+    -a) printf '%s\\n' "$TEST_AVAILABLE"; exit "$TEST_ENUMERATE_STATUS" ;;
+    charmap)
+        if [ "$LC_ALL" = "$TEST_UTF8" ]; then
+            printf '%s\\n' "$TEST_CHARMAP"
+        else
+            printf '%s\\n' US-ASCII
+        fi ;;
+    *) exit 2 ;;
+esac
+""")
+            locale.chmod(0o755)
+            binary = scratch / "program with spaces"
+            binary.write_text("""#!/bin/sh
+printf '%s\\n' "$LC_ALL" "$@" >> "$TEST_LOG"
+printf 'destructive-confirm %s\\n' "$TEST_VERSION"
+exit "$TEST_STATUS"
+""")
+            binary.chmod(0o755)
+            log = scratch / "calls"
+            env = os.environ.copy()
+            env.update({
+                "PATH": f"{commands}{os.pathsep}{env.get('PATH', '')}",
+                "LC_ALL": caller, "LC_CTYPE": ctype, "LANG": lang,
+                "LC_TIME": "unavailable", "TEST_AVAILABLE": available,
+                "TEST_UTF8": utf8, "TEST_CHARMAP": charmap,
+                "TEST_LOG": str(log), "TEST_VERSION": version,
+                "TEST_STATUS": str(status),
+                "TEST_ENUMERATE_STATUS": str(enumerate_status),
+            })
+            result = subprocess.run(
+                ["sh", str(ROOT / "tests/check-unicode.sh"), str(binary), "0.1.1"],
+                env=env, capture_output=True, text=True, encoding="utf-8", timeout=10)
+            calls = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+            return result, calls
+
+    def assert_checks(self, result, calls, expected_locale):
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("SKIP", result.stdout)
+        self.assertEqual(calls, [
+            value
+            for arg in ("--title", "--text", "--confirm-label", "--cancel-label")
+            for value in (expected_locale, arg, "café_删除", "--version")
+        ])
+
+    def test_falls_back_to_available_locale_without_c_utf8(self):
+        self.assert_checks(*self.run_check(), "en_US.UTF-8")
+
+    def test_prefers_verified_caller_locale_without_enumerating(self):
+        self.assert_checks(*self.run_check(
+            caller="custom.UTF8", utf8="custom.UTF8", charmap="utf8",
+            enumerate_status=1), "custom.UTF8")
+
+    def test_accepts_utf8_locale_with_no_encoding_suffix(self):
+        self.assert_checks(*self.run_check(
+            available="C\nPOSIX\ncustom", utf8="custom"), "custom")
+
+    def test_uses_ctype_before_lang_when_lc_all_is_empty(self):
+        self.assert_checks(*self.run_check(
+            caller="", ctype="custom", lang="unavailable", utf8="custom",
+            enumerate_status=1), "custom")
+
+    def test_uses_lang_when_lc_all_and_ctype_are_empty(self):
+        self.assert_checks(*self.run_check(
+            caller="", lang="custom", utf8="custom",
+            enumerate_status=1), "custom")
+
+    def test_skips_only_unicode_cases_without_utf8_locale(self):
+        result, calls = self.run_check(available="C\nPOSIX")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("SKIP Unicode option checks", result.stdout)
+        self.assertEqual(calls, [])
+
+    def test_locale_enumeration_failure_is_not_a_skip(self):
+        result, calls = self.run_check(enumerate_status=1)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("SKIP", result.stdout)
+        self.assertEqual(calls, [])
+
+    def test_rejects_program_failure_even_with_expected_output(self):
+        result, _ = self.run_check(status=2)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_unexpected_program_output(self):
+        result, _ = self.run_check(version="unexpected")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Unexpected version output", result.stderr)
 
 
 class PresetBuildTests(unittest.TestCase):

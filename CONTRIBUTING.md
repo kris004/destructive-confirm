@@ -21,7 +21,9 @@ git diff --check
 ```
 
 `make check` verifies help, version output, invalid arguments, and Unicode option
-values without a display; the Unicode cases use the `C.UTF-8` locale.
+values without a display. The Unicode cases prefer the caller's character
+locale when verified as UTF-8, otherwise select an available UTF-8 locale.
+Only those cases report `SKIP` if no UTF-8 locale is available.
 `make smoke-gui` tests native responses, literal button labels, keyboard activation,
 motion preferences, and both dialog layouts. Its two six-second timeouts are
 expected successes.
@@ -43,7 +45,8 @@ also check real keyboard/focus and accessibility behavior on a normal desktop.
 `make check-presets` builds all five selections in temporary directories,
 compares every embedded resource with its manifest, tests incremental switching,
 rejects invalid selectors, and checks paths containing spaces and staged
-installation/removal. It does not change your local `config.h` or installed binary.
+installation/removal. It also tests locale selection and Unicode-check failures
+with isolated fixtures. It does not change your local `config.h` or installed binary.
 `DC_TEST_TMPDIR` can select an existing directory outside the source tree;
 Portage uses its sandbox-owned `${T}`. `PYTHON` selects the test interpreter.
 `make check-release` exercises deterministic source packaging and fail-closed
