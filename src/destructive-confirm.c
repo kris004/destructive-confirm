@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #include <adwaita.h>
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
@@ -333,6 +334,11 @@ parse_options(int *argc, char ***argv, AppState *state) {
 
   if (!g_option_context_parse(context, argc, argv, &error)) {
     g_printerr("destructive-confirm: %s\n", error->message);
+    return FALSE;
+  }
+
+  if (*argc > 1) {
+    g_printerr("destructive-confirm: unexpected argument: %s\n", (*argv)[1]);
     return FALSE;
   }
 

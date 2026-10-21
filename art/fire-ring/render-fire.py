@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Render the original fire-border artwork with Blender 5.0.
 
 Run with Blender's --background --factory-startup --python, then pass:

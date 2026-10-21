@@ -24,6 +24,8 @@ without growing their own GTK code.
   - `--cancel-label <text>`
 - Exit `0` only when the user confirms.
 - Exit non-zero for Escape, Cancel, close, parse errors, or display failures.
+- Treat unexpected positional arguments as usage errors, not ignored input.
+- Print `--help` without a display; like standard CLI tools, help exits `0`.
 - Make Enter activate the confirm response.
 - Make Escape/window-close activate cancel.
 - Use native GTK/libadwaita destructive response semantics.
@@ -143,4 +145,8 @@ an older still-running prompt with the same application ID.
 The project builds a single binary at `build/destructive-confirm` and installs
 it to `$(PREFIX)/bin/destructive-confirm`, defaulting to
 `~/.local/bin/destructive-confirm`. `make install` also creates a
-`power-confirm` symlink for older callers.
+`power-confirm` symlink for older callers. README and GPL license/copyright
+notices are installed under `$(PREFIX)/share/doc/destructive-confirm`.
+`BINDIR`, `DOCDIR`, and `DESTDIR` support staged packaging. `make uninstall`
+removes only these installed filenames and preserves unrelated documentation;
+it needs neither a compiler nor GTK headers.

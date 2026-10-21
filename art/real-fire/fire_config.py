@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Fluid-rendered fire: source pixels, timing, and logical drawing geometry."""
 
 FPS = 30

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef ANIMATION_CONFIG_H
 #define ANIMATION_CONFIG_H
 

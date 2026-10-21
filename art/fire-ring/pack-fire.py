@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Validate rendered frames and embed the ignition/loop as GTK border images."""
 
 import argparse

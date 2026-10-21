@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Check the fluid-fire bundle and the premultiplied loop seam."""
 
 import importlib.util

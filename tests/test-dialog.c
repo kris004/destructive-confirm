@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Exercise the real CLI dialog constructors and response handlers. */
 #include <math.h>
 

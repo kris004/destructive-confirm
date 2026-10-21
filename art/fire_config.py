@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Shared render and playback geometry, in source pixels and logical pixels."""
 
 FPS = 30

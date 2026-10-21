@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Render rising fluid fire with Blender 5.0, not animated ribbon geometry.
 
 blender --background --factory-startup --disable-autoexec --threads 4 \

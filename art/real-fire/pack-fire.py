@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Pack fluid-rendered fire and make its turbulent burn loop continuous."""
 
 import argparse

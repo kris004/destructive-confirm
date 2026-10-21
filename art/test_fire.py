@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Optional artwork checks: python3 -B -m unittest discover -s art."""
 
 from pathlib import Path

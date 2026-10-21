@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef FIRE_OVERLAY_H
 #define FIRE_OVERLAY_H
 

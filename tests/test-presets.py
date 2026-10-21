@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Build every header-selected preset and inspect the actual embedded bundle."""
 
 import os
@@ -51,6 +52,64 @@ class PresetBuildTests(unittest.TestCase):
         self.assertEqual(" fire_overlay_new\n" in symbols,
                          preset in ("tall-ring", "real-fire"))
 
+    def assert_staged_install(self, scratch, config, binary):
+        stage = scratch / "stage"
+        options = (f"DESTDIR={stage}", "PREFIX=/usr")
+        self.run_make(scratch, config, "install", *options)
+        installed = stage / "usr/bin/destructive-confirm"
+        compat = stage / "usr/bin/power-confirm"
+        docs = stage / "usr/share/doc/destructive-confirm"
+        self.assertEqual(installed.read_bytes(), binary.read_bytes())
+        self.assertEqual(installed.stat().st_mode & 0o777, 0o755)
+        self.assertTrue(compat.is_symlink())
+        self.assertEqual(os.readlink(compat), "destructive-confirm")
+        for name in ("README.md", "LICENSE", "COPYRIGHT"):
+            self.assertEqual((docs / name).read_bytes(), (ROOT / name).read_bytes())
+        expected = {
+            "usr/bin/destructive-confirm", "usr/bin/power-confirm",
+            *(f"usr/share/doc/destructive-confirm/{name}"
+              for name in ("README.md", "LICENSE", "COPYRIGHT")),
+        }
+        self.assertEqual(
+            {str(path.relative_to(stage)) for path in stage.rglob("*")
+             if not path.is_dir()}, expected)
+
+        # Uninstall only project-owned paths; custom documentation must survive.
+        extra = docs / "keep.txt"
+        extra.write_text("packager-owned documentation\n")
+        self.run_make(scratch, config, "uninstall", *options, "CC=false")
+        self.assertFalse(installed.exists())
+        self.assertFalse(compat.is_symlink())
+        self.assertEqual(extra.read_text(), "packager-owned documentation\n")
+        self.assertEqual(list(docs.iterdir()), [extra])
+        extra.unlink()
+        self.run_make(scratch, config, "uninstall", *options)
+        self.assertFalse(docs.exists())
+
+    def test_install_directory_overrides(self):
+        with tempfile.TemporaryDirectory(prefix="destructive-confirm-install.",
+                                         dir="/tmp") as directory:
+            scratch = Path(directory)
+            config = scratch / "config.h"
+            config.write_text("#define CONFIRM_ANIMATION ANIMATION_NONE\n")
+            stage = scratch / "stage with spaces"
+            options = (f"DESTDIR={stage}", "PREFIX=/opt/unused",
+                       "BINDIR=/opt/custom bin", "DOCDIR=/opt/custom docs")
+            self.run_make(scratch, config, "install", *options)
+            self.assertEqual(
+                (stage / "opt/custom bin/destructive-confirm").read_bytes(),
+                (scratch / "build/destructive-confirm").read_bytes())
+            self.assertEqual(
+                os.readlink(stage / "opt/custom bin/power-confirm"),
+                "destructive-confirm")
+            self.assertTrue((stage / "opt/custom docs/LICENSE").is_file())
+            self.assertFalse((stage / "opt/unused").exists())
+            self.run_make(scratch, config, "uninstall", *options,
+                          "CC=false", "PKG_CONFIG=false")
+            self.assertFalse((stage / "opt/custom bin/destructive-confirm").exists())
+            self.assertFalse((stage / "opt/custom bin/power-confirm").is_symlink())
+            self.assertFalse((stage / "opt/custom docs").exists())
+
     def test_selection_resources_and_incremental_switching(self):
         # Never place test builds/configs in the source tree or rely on TMPDIR.
         with tempfile.TemporaryDirectory(prefix="destructive-confirm-presets.",
@@ -64,6 +123,7 @@ class PresetBuildTests(unittest.TestCase):
                     self.run_make(scratch, config, "check")
                     binary = scratch / "build/destructive-confirm"
                     self.assert_resources(binary, preset)
+                    self.assert_staged_install(scratch, config, binary)
                     help_text = subprocess.check_output(
                         [str(binary), "--help"], text=True)
                     self.assertNotIn("--animation", help_text)

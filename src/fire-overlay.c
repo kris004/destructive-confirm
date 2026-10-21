@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "fire-overlay.h"
 #include "animation-config.h"
 #include DC_FIRE_ART_HEADER

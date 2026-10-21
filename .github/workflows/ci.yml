@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build, presets, and native dialogs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source and history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential pkg-config libgtk-4-dev libadwaita-1-dev \
+            libglib2.0-dev-bin python3-pil binutils xvfb xauth dbus-x11
+
+      - name: Allocate disposable build directory
+        run: |
+          scratch=$(mktemp -d "$RUNNER_TEMP/destructive-confirm.XXXXXXXX")
+          echo "DC_CI_SCRATCH=$scratch" >> "$GITHUB_ENV"
+          cp config.def.h "$scratch/config.h"
+
+      - name: Scan reachable history for secrets
+        run: |
+          version=8.30.1
+          archive="gitleaks_${version}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --max-time 120 \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/${archive}" \
+            -o "$DC_CI_SCRATCH/$archive"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $DC_CI_SCRATCH/$archive" \
+            | sha256sum --check -
+          tar -xzf "$DC_CI_SCRATCH/$archive" -C "$DC_CI_SCRATCH" gitleaks
+          "$DC_CI_SCRATCH/gitleaks" git --no-banner --redact --log-opts="--all" .
+
+      - name: Check CLI, resources, and staged installation
+        run: |
+          make BUILD_DIR="$DC_CI_SCRATCH/build" CONFIG_H="$DC_CI_SCRATCH/config.h" \
+            check check-presets
+          python3 -B -m unittest discover -s art -v
+
+      - name: Exercise every preset's native dialogs
+        run: |
+          for macro in ANIMATION_TALL_RING ANIMATION_REAL_FIRE \
+                       ANIMATION_FIRE_RING ANIMATION_SVG_FLAMES ANIMATION_NONE
+          do
+            printf '#define CONFIRM_ANIMATION %s\n' "$macro" > "$DC_CI_SCRATCH/config.h"
+            dbus-run-session -- xvfb-run -a env \
+              GDK_BACKEND=x11 GSK_RENDERER=cairo GTK_A11Y=none \
+              make BUILD_DIR="$DC_CI_SCRATCH/build" CONFIG_H="$DC_CI_SCRATCH/config.h" \
+                smoke-gui preview-tool
+            dbus-run-session -- xvfb-run -a env \
+              GDK_BACKEND=x11 GSK_RENDERER=cairo GTK_A11Y=none GTK_THEME=HighContrast \
+              G_DEBUG=fatal-warnings "$DC_CI_SCRATCH/build/test-dialog"
+          done
+          git diff --exit-code
+
+      - name: Remove disposable files
+        if: always() && env.DC_CI_SCRATCH != ''
+        run: |
+          case "$DC_CI_SCRATCH" in
+            "$RUNNER_TEMP"/destructive-confirm.*) ;;
+            *) echo "Refusing unexpected scratch path" >&2; exit 1 ;;
+          esac
+          test -d "$DC_CI_SCRATCH" && test ! -L "$DC_CI_SCRATCH" \
+            && test -O "$DC_CI_SCRATCH"
+          make BUILD_DIR="$DC_CI_SCRATCH/build" clean
+          rm -r -- "$DC_CI_SCRATCH"

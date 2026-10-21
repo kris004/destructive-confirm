@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Validate and pack the rendered ignition/loop for the GTK fire overlay."""
 
 import argparse
